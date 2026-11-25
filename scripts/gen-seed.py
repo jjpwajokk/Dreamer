@@ -2,7 +2,7 @@
 import uuid, random
 random.seed(7)
 def q(s): return s.replace("'","''")
-def u(): return str(uuid.UUID(int=random.getrandbits(128)))
+def u(): return str(uuid.UUID(int=random.getrandbits(128), version=4))
 schools = [
  ("Hilltop Community Secondary School","Plateau","Jos"),
  ("Unity Model College","Enugu","Enugu"),

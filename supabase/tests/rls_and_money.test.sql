@@ -93,7 +93,7 @@ do $$ begin
   assert (select count(*) from public.public_needs where slug = 'test-need') = 0, 'submitted need is public';
   assert (select count(*) from public.public_needs) = 13, 'expected 13 public seed needs';
   assert (select count(*) from public.public_needs where status = 'submitted') = 0, 'submitted needs leaked';
-  assert (select count(*) from public.public_needs where is_minor and institution_label not in ('Their school', 'The hospital')) = 0, 'minor institution name leaked';
+  assert (select count(*) from public.public_needs where is_minor and institution_label not in ('their school', 'the hospital')) = 0, 'minor institution name leaked';
 end $$;
 do $$ begin
   begin

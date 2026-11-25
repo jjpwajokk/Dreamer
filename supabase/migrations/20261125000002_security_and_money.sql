@@ -142,7 +142,7 @@ select
   n.expires_at,
   i.type as institution_type,
   case
-    when n.is_minor then case i.type when 'hospital' then 'The hospital' else 'Their school' end
+    when n.is_minor then case i.type when 'hospital' then 'the hospital' else 'their school' end
     else i.name
   end as institution_label,
   (select count(*) from public.contributions c where c.need_id = n.id and c.status = 'success')::int as giver_count,
@@ -324,19 +324,39 @@ values
    array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
 
+drop policy if exists "need-documents: upload own" on storage.objects;
 create policy "need-documents: upload own" on storage.objects
   for insert to authenticated
   with check (bucket_id = 'need-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "need-documents: read own or admin" on storage.objects;
 create policy "need-documents: read own or admin" on storage.objects
   for select to authenticated
   using (bucket_id = 'need-documents' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin()));
+drop policy if exists "need-documents: delete own" on storage.objects;
 create policy "need-documents: delete own" on storage.objects
   for delete to authenticated
   using (bucket_id = 'need-documents' and (storage.foldername(name))[1] = auth.uid()::text);
 
+drop policy if exists "public-media: upload own" on storage.objects;
 create policy "public-media: upload own" on storage.objects
   for insert to authenticated
   with check (bucket_id = 'public-media' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "public-media: delete own" on storage.objects;
 create policy "public-media: delete own" on storage.objects
   for delete to authenticated
   using (bucket_id = 'public-media' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ---------------------------------------------------------------------------
+-- Explicit grants (Supabase adds similar defaults; being explicit keeps this
+-- correct even without them). Row level security still decides which rows.
+-- ---------------------------------------------------------------------------
+
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+revoke all on public.audit_log from anon, authenticated;
+grant select on public.audit_log to authenticated;
+grant select on public.public_needs, public.public_need_checks, public.public_updates to anon;
+grant select on public.updates to anon;
+grant insert on public.reports to anon;
