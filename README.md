@@ -4,7 +4,9 @@ Help a real person with a real, verified need, and watch it change their life.
 
 Dreamer is a mobile-first web app for giving in Nigeria. People post a verified need (school fees first, hospital bills later) with the amount, a short story and one line in their own words. Givers swipe through needs and give through Paystack. The money is paid **straight to the school or hospital**, never to a personal account. After that, the person posts an update so givers can see what changed.
 
-Built with Next.js 15, Supabase (Postgres, Auth, Storage) and Paystack, deployed on Vercel. The product brief is in [docs/PRODUCT.md](docs/PRODUCT.md).
+Built with Next.js 15, Supabase (Postgres, Auth, Storage) and Paystack, deployed on Vercel.
+
+Test site: https://dreamer-woad-kappa.vercel.app (payments not switched on yet). The product brief is in [docs/PRODUCT.md](docs/PRODUCT.md).
 
 ## What's in the MVP
 
