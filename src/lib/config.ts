@@ -4,7 +4,10 @@ export const TAGLINE = "Help a real person with a real, verified need, and watch
 export const NEED_LIFETIME_DAYS = 30;
 
 export function siteUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+  // Prefer the stable production address: per-deployment URLs (VERCEL_URL)
+  // can be private, which breaks link previews on WhatsApp and elsewhere.
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || (vercel ? `https://${vercel}` : "");
   return (fromEnv || "http://localhost:3000").replace(/\/$/, "");
 }
 
