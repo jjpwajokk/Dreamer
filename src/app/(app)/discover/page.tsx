@@ -11,12 +11,15 @@ import { CATEGORIES, SECTORS } from "@/lib/sectors";
 
 export const metadata: Metadata = { title: "Discover needs" };
 
-type Search = { category?: string; state?: string; close?: string; view?: string };
+type Search = { category?: string; state?: string; close?: string; view?: string; urgent?: string; sort?: string };
 
 export default async function DiscoverPage({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
   const session = await getSession();
-  const needs = await getFeed({ category: sp.category, state: sp.state, close: sp.close === "1" }, { userId: session?.userId });
+  const needs = await getFeed(
+    { category: sp.category, state: sp.state, close: sp.close === "1", urgent: sp.urgent === "1", sort: sp.sort === "deadline" ? "deadline" : undefined },
+    { userId: session?.userId },
+  );
   const grid = sp.view === "grid";
 
   const link = (patch: Partial<Search>) => {
@@ -27,7 +30,7 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
   const chip = (active: boolean) =>
     cn(
       "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition",
-      active ? "border-ink bg-ink text-white" : "border-line bg-surface text-ink hover:border-ink/25",
+      active ? "border-ink bg-ink text-bg" : "border-line bg-surface text-ink hover:border-ink/25",
     );
   const viewBtn = (active: boolean) =>
     cn("inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition", active ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink");
@@ -37,9 +40,9 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
       <PageTitle
         eyebrow="Give"
         title="Discover needs"
-        subtitle="Every person here has been checked by our team. Your gift is paid straight to their school, hospital, landlord or supplier."
+        subtitle="Verified needs, held in escrow, paid directly to the payee. Your gift waits securely until final checks pass, then goes straight to the school, hospital, landlord or supplier."
         action={
-          <div className="inline-flex rounded-xl bg-black/[.05] p-1" role="group" aria-label="View">
+          <div className="inline-flex rounded-xl bg-tint/[.05] p-1" role="group" aria-label="View">
             <Link href={link({ view: undefined })} className={viewBtn(!grid)} aria-pressed={!grid}><Layers className="h-4 w-4" aria-hidden /> One at a time</Link>
             <Link href={link({ view: "grid" })} className={viewBtn(grid)} aria-pressed={grid}><LayoutGrid className="h-4 w-4" aria-hidden /> Browse all</Link>
           </div>
@@ -47,13 +50,15 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
       />
 
       <div className="scrollbar-none -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-        <Link className={chip(!sp.category && sp.close !== "1" && !sp.state)} href={link({ category: undefined, close: undefined, state: undefined })}>Everyone</Link>
+        <Link className={chip(!sp.category && sp.close !== "1" && !sp.state && sp.urgent !== "1")} href={link({ category: undefined, close: undefined, state: undefined, urgent: undefined })}>Everyone</Link>
         {CATEGORIES.map((c) => (
           <Link key={c} className={chip(sp.category === c)} href={link({ category: sp.category === c ? undefined : c })}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: sp.category === c ? "#fff" : SECTORS[c].accent }} aria-hidden />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: sp.category === c ? "currentColor" : SECTORS[c].accent }} aria-hidden />
             {SECTORS[c].label}
           </Link>
         ))}
+        <Link className={chip(sp.urgent === "1")} href={link({ urgent: sp.urgent === "1" ? undefined : "1" })}>Time-sensitive</Link>
+        <Link className={chip(sp.sort === "deadline")} href={link({ sort: sp.sort === "deadline" ? undefined : "deadline" })}>Deadline soonest</Link>
         <Link className={chip(sp.close === "1")} href={link({ close: sp.close === "1" ? undefined : "1" })}>Close to goal</Link>
         <details className="relative">
           <summary className={cn(chip(Boolean(sp.state)), "cursor-pointer list-none")}>{sp.state ?? "Any state"}</summary>

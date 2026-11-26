@@ -26,6 +26,13 @@ export default async function AdminHome() {
     admin.from("needs").select("id", { count: "exact", head: true }).eq("status", "expired").gt("raised_kobo", 0),
     admin.from("contributions").select("amount_kobo, fee_kobo, giver_email, status").in("status", ["success", "redirected"]),
   ]);
+  const [urgentQ, escrowQ, kycQ, orgQ, photoQ] = await Promise.all([
+    admin.from("needs").select("id", { count: "exact", head: true }).in("status", ["submitted", "needs_info", "live", "funded"]).is("verified_at", null).eq("is_urgent", true),
+    admin.from("needs").select("id", { count: "exact", head: true }).in("status", ["live", "funded"]).is("verified_at", null),
+    admin.from("profiles").select("id", { count: "exact", head: true }).eq("kyc_status", "submitted").is("banned_at", null),
+    admin.from("organisations").select("id", { count: "exact", head: true }).eq("status", "submitted"),
+    admin.from("media").select("id", { count: "exact", head: true }).eq("moderation", "pending"),
+  ]);
   const ok = (money.data ?? []).filter((r) => r.status === "success");
   const raised = ok.reduce((s, r) => s + r.amount_kobo, 0);
   const fees = (money.data ?? []).reduce((s, r) => s + (r.fee_kobo ?? 0), 0);
@@ -33,7 +40,12 @@ export default async function AdminHome() {
   const expiredCount = expired.count ?? 0;
 
   const queues = [
+    { label: "Time-sensitive, not yet verified", value: urgentQ.count ?? 0, href: "/admin/needs?status=submitted", Icon: AlertCircle },
     { label: "New needs to verify", value: submitted, href: "/admin/needs?status=submitted", Icon: BadgeCheck },
+    { label: "Live in escrow, to verify", value: escrowQ.count ?? 0, href: "/admin/needs?status=escrow", Icon: Timer },
+    { label: "ID checks to review", value: kycQ.count ?? 0, href: "/admin/people", Icon: BadgeCheck },
+    { label: "Organisations to review", value: orgQ.count ?? 0, href: "/admin/organisations", Icon: BadgeCheck },
+    { label: "Photos to review", value: photoQ.count ?? 0, href: "/admin/photos", Icon: Megaphone },
     { label: "Payouts due", value: funded, href: "/admin/payouts", Icon: Banknote },
     { label: "Updates to review", value: pendingUpdates, href: "/admin/updates", Icon: Megaphone },
     { label: "Open reports", value: openReports, href: "/admin/reports", Icon: Flag },
@@ -59,7 +71,7 @@ export default async function AdminHome() {
                   urgent ? "border-sun/60" : "border-line",
                 )}
               >
-                <span className={cn("grid h-11 w-11 place-items-center rounded-xl", urgent ? "bg-sun-soft text-[#8a5a10]" : "bg-black/[.04] text-muted")}>
+                <span className={cn("grid h-11 w-11 place-items-center rounded-xl", urgent ? "bg-sun-soft text-sun-ink" : "bg-tint/[.04] text-muted")}>
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

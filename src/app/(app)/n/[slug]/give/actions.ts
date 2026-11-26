@@ -7,6 +7,7 @@ import { planGift, type FeeMode } from "@/lib/money";
 import { allow, RATE_LIMITED } from "@/lib/rate-limit";
 import { initializeTransaction, newReference } from "@/lib/paystack";
 import { firstError, giftSchema } from "@/lib/validation";
+import { KYC_GIFT_THRESHOLD_KOBO, formatNaira } from "@/lib/money";
 
 export type GiftResult = { url?: string; error?: string };
 
@@ -29,6 +30,13 @@ export async function startGift(input: {
   } = await supabase.auth.getUser();
 
   const admin = createAdminClient();
+  // Light KYC only for large gifts, so giving stays open to everyone.
+  if (parsed.data.amountKobo > KYC_GIFT_THRESHOLD_KOBO) {
+    if (!user) return { error: `To give more than ${formatNaira(KYC_GIFT_THRESHOLD_KOBO)} at once, please sign in and get verified first. It takes two minutes.` };
+    const { data: me } = await admin.from("profiles").select("kyc_status, banned_at").eq("user_id", user.id).maybeSingle();
+    if (me?.banned_at) return { error: "This account can't give on Dreamer." };
+    if (me?.kyc_status !== "verified") return { error: `Gifts above ${formatNaira(KYC_GIFT_THRESHOLD_KOBO)} need a verified account. Get verified at /me/verify, or give a smaller amount now.` };
+  }
   const { data: need } = await admin
     .from("needs")
     .select("id, slug, display_name, status, amount_kobo, raised_kobo, expires_at")

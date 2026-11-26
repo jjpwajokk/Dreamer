@@ -16,13 +16,13 @@ export const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c, SECTO
 export const STATUS_LABEL: Record<NeedStatus, string> = {
   draft: "Draft",
   submitted: "Under review",
-  needs_info: "More info needed",
+  needs_info: "A detail to add",
   live: "Live",
   funded: "Fully funded",
-  paid_out: "Paid to institution",
+  paid_out: "Paid out",
   completed: "Completed",
-  rejected: "Not approved",
-  expired: "Expired",
+  rejected: "Not taken forward",
+  expired: "Closed",
 };
 
 export const RELATIONSHIP_LABEL: Record<string, string> = {
@@ -31,6 +31,7 @@ export const RELATIONSHIP_LABEL: Record<string, string> = {
   guardian: "Someone I am guardian to",
   teacher: "My student",
   religious_leader: "A member of my congregation",
+  organisation: "Someone our organisation supports",
   other: "Someone else I know",
 };
 
@@ -39,11 +40,15 @@ export const MILESTONES: { value: string; label: string; category?: Category }[]
   { value: "back_in_class", label: "Back in class", category: "education" },
   { value: "results", label: "Results are in", category: "education" },
   { value: "graduated", label: "Graduated", category: "education" },
+  { value: "fees_paid", label: "Fees paid", category: "education" },
   { value: "treated", label: "Treatment done", category: "healthcare" },
   { value: "discharged", label: "Discharged", category: "healthcare" },
   { value: "recovering", label: "Recovering", category: "healthcare" },
-  { value: "moved_in", label: "Rent paid, home secured", category: "housing" },
+  { value: "bill_paid", label: "Bill settled", category: "healthcare" },
+  { value: "moved_in", label: "Home secured", category: "housing" },
+  { value: "rent_paid", label: "Rent paid", category: "housing" },
   { value: "business_running", label: "Business is running", category: "livelihood" },
+  { value: "stock_bought", label: "Tools and stock in", category: "livelihood" },
   { value: "certified", label: "Trained and certified", category: "skills" },
   { value: "back_on_feet", label: "Back on their feet", category: "emergency" },
   { value: "back_to_work", label: "Back to work" },

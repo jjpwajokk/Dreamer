@@ -28,15 +28,19 @@ export default async function MyNeedsPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageTitle eyebrow="Ask for help" title="My needs" action={<LinkButton href="/me/needs/new" size="sm">Post a need</LinkButton>} />
+      <PageTitle eyebrow="Get support" title="My needs" action={<LinkButton href="/me/needs/new" size="sm">Share a need</LinkButton>} />
       {submitted ? (
         <div className="mb-5">
-          <Notice>Submitted. Our team will check the details with the payee, usually within 48 hours. We&apos;ll let you know.</Notice>
+          <Notice>
+            {submitted === "live"
+              ? "You're live! Givers can find your need now. Gifts are held safely until our checks are done (usually within 48 hours), then paid out. Share your link to get started."
+              : "Submitted. Our team will check the details with the payee, usually within 48 hours. We'll let you know."}
+          </Notice>
         </div>
       ) : null}
       {needs.length === 0 ? (
-        <EmptyState title="No needs yet" action={<LinkButton href="/me/needs/new">Post a need</LinkButton>}>
-          Post a need for school fees, medical bills, rent, tools for a small business, training or emergency relief, for yourself or someone you know. Every need is verified before it goes live.
+        <EmptyState title="Your story starts here" action={<LinkButton href="/me/needs/new">Share a need</LinkButton>}>
+          School fees, a hospital bill, rent, stock for your business, a training course or a fresh start after an emergency: share what you&apos;re working towards, for yourself or someone you know. Every need is checked so givers can back it with confidence.
         </EmptyState>
       ) : (
         <ul className="space-y-4">
@@ -67,7 +71,7 @@ export default async function MyNeedsPage({ searchParams }: { searchParams: Prom
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     {["draft", "needs_info"].includes(n.status) ? <LinkButton href={`/me/needs/${n.id}`} size="sm">{n.status === "draft" ? "Continue" : "Add information"}</LinkButton> : null}
                     {["live", "funded", "paid_out", "completed"].includes(n.status) ? <LinkButton href={`/n/${n.slug}`} size="sm" variant="secondary">View public page</LinkButton> : null}
-                    {["funded", "paid_out", "completed"].includes(n.status) ? <LinkButton href={`/me/needs/${n.id}/update`} size="sm">Post an update</LinkButton> : null}
+                    {["live", "funded", "paid_out", "completed"].includes(n.status) ? <LinkButton href={`/me/needs/${n.id}/update`} size="sm">Share progress</LinkButton> : null}
                     <DraftActions needId={n.id} status={n.status} />
                   </div>
                 </Card>
@@ -88,12 +92,16 @@ function StatusHelp({ need, updateCount, pendingUpdates }: { need: Need; updateC
     draft: "Not submitted yet. Finish the steps and submit it for review.",
     submitted: `Under review since ${formatDate(need.submitted_at)}. We'll call the institution to confirm, usually within 48 hours.`,
     needs_info: `Our team needs more information: ${need.info_request ?? ""}`,
-    live: `Live and verified. Share your link on WhatsApp to reach more givers.${need.expires_at ? ` Open until ${formatDate(need.expires_at)}.` : ""}`,
-    funded: "Fully funded! We are paying the money directly to the institution now.",
-    paid_out: `Paid to the institution on ${formatDate(need.paid_out_at)}. Please post an update so your givers can see what changed.`,
-    completed: "Completed. Thank you for sharing your update.",
-    rejected: `Not approved. ${need.rejection_reason ?? ""}`,
-    expired: "This need expired before it was fully funded. Our team will contact you about what happens next.",
+    live: need.verified_at
+      ? `Live and verified. Share your link on WhatsApp to reach more givers.${need.expires_at ? ` Open until ${formatDate(need.expires_at)}.` : ""}`
+      : `Live while we finish our checks. Gifts are held safely and released once checks pass${need.escrow_deadline ? ` (by ${formatDate(need.escrow_deadline)})` : ""}. Share your link to reach more givers.`,
+    funded: need.verified_at ? "Fully funded! We're sending the money to the payee now." : "Fully funded! The money is held safely and is paid out as soon as our checks are done.",
+    paid_out: `Paid on ${formatDate(need.paid_out_at)}. Share some progress so your givers can celebrate with you.`,
+    completed: "Completed. Thank you for sharing your journey.",
+    rejected: `We couldn't take this need forward. ${need.rejection_reason ?? ""}`,
+    expired: need.expiry_reason === "unverified"
+      ? "We couldn't complete our checks in time, so every gift has been returned to the givers. You're welcome to share a new need with fuller details."
+      : "This need closed before it was fully funded. Our team will be in touch about next steps.",
   };
   return (
     <div className="mt-3 rounded-xl bg-bg px-3 py-2 text-sm">

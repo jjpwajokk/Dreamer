@@ -30,6 +30,6 @@ export async function GET(request: NextRequest) {
   }
 
   if (!userId) return NextResponse.redirect(new URL(`/login?error=link&next=${encodeURIComponent(next)}`, url.origin));
-  await afterSignIn(userId, email);
+  if (await afterSignIn(userId, email)) return NextResponse.redirect(new URL("/account-closed", url.origin));
   return NextResponse.redirect(new URL(next, url.origin));
 }

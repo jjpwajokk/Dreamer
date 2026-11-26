@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck } from "lucide-react";
+import { AlarmClock, BadgeCheck, Hourglass } from "lucide-react";
 import { avatarTone, cn, formatDate, initials, STATUS_LABEL, type NeedStatus } from "@/lib/format";
 import { publicMediaUrl } from "@/lib/storage";
 import { Badge } from "@/components/ui";
@@ -48,6 +48,29 @@ export function VerifiedBadge({ verifiedAt, compact = false }: { verifiedAt: str
     <Badge tone="brand" title={`Verified on ${formatDate(verifiedAt)}`}>
       <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
       {compact ? "Verified" : `Verified ${formatDate(verifiedAt, true)}`}
+    </Badge>
+  );
+}
+
+/** Shown on live needs still being verified: the money waits safely until checks pass. */
+export function EscrowBadge({ verifiedAt, status }: { verifiedAt: string | null; status: NeedStatus }) {
+  if (verifiedAt || !["live", "funded"].includes(status)) return null;
+  return (
+    <Badge tone="sun" title="Gifts are held securely until our checks are complete">
+      <Hourglass className="h-3.5 w-3.5" aria-hidden /> Checks in progress
+    </Badge>
+  );
+}
+
+/** Time-sensitive marker: shows the deadline when there is one. About time, never about sadness. */
+export function UrgencyBadge({ isUrgent, deadline }: { isUrgent?: boolean; deadline?: string | null }) {
+  if (!isUrgent && !deadline) return null;
+  const days = deadline ? Math.ceil((new Date(`${deadline}T23:59:59+01:00`).getTime() - Date.now()) / 86_400_000) : null;
+  if (days !== null && days < 0 && !isUrgent) return null;
+  const label = days === null ? "Time-sensitive" : days <= 0 ? "Due today" : days === 1 ? "Due tomorrow" : days <= 30 ? `Due in ${days} days` : `Due ${formatDate(deadline!, true)}`;
+  return (
+    <Badge tone={isUrgent || (days !== null && days <= 7) ? "danger" : "neutral"}>
+      <AlarmClock className="h-3.5 w-3.5" aria-hidden /> {label}
     </Badge>
   );
 }
@@ -102,10 +125,16 @@ export function NeedCard({ need, className }: { need: import("@/lib/types").Publ
         </div>
         <CategoryBadge category={need.category} />
       </div>
+      {need.is_urgent || need.deadline || !need.verified_at ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <UrgencyBadge isUrgent={need.is_urgent} deadline={need.deadline} />
+          <EscrowBadge verifiedAt={need.verified_at} status={need.status} />
+        </div>
+      ) : null}
       <p className="mt-4 line-clamp-2 text-[15px] font-medium leading-snug">&ldquo;{need.my_words}&rdquo;</p>
       <p className="mt-1 line-clamp-1 text-sm text-muted">{need.title}</p>
       <div className="mt-auto pt-5">
-        <div className="h-2 overflow-hidden rounded-full bg-black/[.06]">
+        <div className="h-2 overflow-hidden rounded-full bg-tint/[.06]">
           <div className="h-full rounded-full bg-gradient-to-r from-brand to-mint" style={{ width: `${pct}%` }} />
         </div>
         <div className="tabular mt-2 flex justify-between text-xs">

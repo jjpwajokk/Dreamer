@@ -89,7 +89,7 @@ Full-screen cards: photo or initials, first name + state, category, amount, prog
 Feed loads under 2 s on mid-range Android; works without swipe gestures
 4
 Contributions
-Give any amount from ₦1,000, quick picks (₦2k, ₦5k, ₦10k, "Finish it"). Paystack checkout (card, bank transfer, USSD). Optional anonymity. A 5% platform fee, capped at ₦5,000, which the giver adds on top or takes from the gift; the checkout shows exactly what the person receives. Receipt by email.
+Give any amount from ₦1,000, quick picks (₦2k, ₦5k, ₦10k, "Finish it"). Paystack checkout (card, bank transfer, USSD). Optional anonymity. A flat 5% platform fee (no cap), which the giver adds on top or takes from the gift; the checkout shows exactly what the person receives. Receipt by email.
 Payment confirmed by webhook, not by the browser redirect; progress updates instantly
 5
 Payout to institution
@@ -320,3 +320,15 @@ Open questions for Jonn and Jane
 - Who are the first 3 to 5 partner schools?
 - Legal entity: Incorporated Trustees or company limited by guarantee?
 - Should givers be able to message beneficiaries in phase 1, or wait for phase 3?
+
+## Round 3 decisions (2026-11-26)
+
+- **One account** for giving and getting support. People switch freely; no "giver or receiver" choice at sign-up.
+- **Low barrier, proportionate checks.** Browsing and giving up to ₦200,000 need no ID. A light ID check (legal name, date of birth, phone, address, work, ID photo, optional NIN lookup) is needed to share a need, run an organisation, or give more than ₦200,000.
+- **Escrow.** The promise is "verified needs, held in escrow, paid directly to the payee". Gifts are held by the licensed payment provider (the Paystack balance), never by Dreamer, and released by transfer only after verification. Needs can go live before checks finish; if a need can't be verified within 30 days it closes and every giver is refunded in full. Legal note: a formal escrow arrangement may need a licensed trustee or escrow agent before scale; confirm with counsel.
+- **Fraud** means a permanent ban: the account closes, its needs close with refunds, and fingerprints of the email, phone, ID and bank accounts block return.
+- **Organisations** (orphanages, care homes, NGOs, foundations, faith-based and community groups) register with CAC documents and are paid only into an account in the organisation's own name.
+- **Individuals** may add their own account as a backup payee; an admin chooses it case by case and it is logged.
+- **Privacy.** Photos and social links are for signed-in members only. Owners choose "members" or "on request" per photo, and members, on request or hidden for socials. Sensitive photos are blurred until tapped. Every photo is reviewed (AI screening optional).
+- **Urgency** is about time (hospital bills due now, fee deadlines), never about how hard a story is.
+- **Fee:** a flat 5% with no cap, shown only at checkout.

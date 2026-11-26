@@ -16,9 +16,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   const points = [
     { Icon: HeartHandshake, title: "Give to verified people", text: "Meet real Nigerians with checked needs and give any amount from ₦1,000." },
-    { Icon: PlusCircle, title: "Ask for help with dignity", text: "Post a need for yourself or someone you know. We verify it, then share it." },
-    { Icon: Landmark, title: "Money goes to the bill", text: "We pay the school, hospital, landlord or supplier directly. Never a personal account." },
-    { Icon: BadgeCheck, title: "See what changed", text: "Follow the people you help and get their updates when the need is met." },
+    { Icon: PlusCircle, title: "Share what you're working towards", text: "School, health, a home or a business: for yourself or someone you know. We verify it, then cheer it on." },
+    { Icon: Landmark, title: "Held in escrow, paid directly", text: "Gifts wait securely until final checks pass, then go straight to the school, hospital, landlord or supplier." },
+    { Icon: BadgeCheck, title: "Celebrate the progress", text: "Follow the people you back, with photos, receipts and milestones along the way." },
   ];
 
   return (
@@ -44,7 +44,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               ))}
             </ul>
           </div>
-          <p className="text-xs text-white/45">Verified needs · Direct payment to institutions · Updates from every person helped</p>
+          <p className="text-xs text-white/45">Verified needs · Held in escrow · Paid directly to the payee</p>
         </div>
       </aside>
 
@@ -56,7 +56,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="flex flex-1 items-center justify-center px-6 pb-16">
           <div className="w-full max-w-[400px]">
             <h1 className="font-display text-[32px] leading-tight">Welcome back</h1>
-            <p className="mt-2 text-[15px] text-muted">Sign in or create a free account to give, post a need, and follow your impact.</p>
+            <p className="mt-2 text-[15px] text-muted">One free account to give, share a need, and follow every story you're part of.</p>
             {error ? (
               <div className="mt-5">
                 <Notice tone="danger">That sign-in link didn&apos;t work or has expired. Please request a new one.</Notice>

@@ -12,6 +12,8 @@
   --color-mint: #34d399;
   --color-sun: #f5a524;
   --color-sun-soft: #fff4dd;
+  --color-sun-ink: #7a4f0c;
+  --color-tint: #000000;
   --color-danger: #c4320a;
   --color-danger-soft: #fdeee8;
   --color-night: #04100d;
@@ -33,7 +35,34 @@
   50% { transform: translate3d(0, -18px, 0) scale(1.04); }
 }
 
+/* Dark mode follows the device setting automatically. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #060c0b;
+    --color-surface: #0e1816;
+    --color-ink: #e6eeeb;
+    --color-muted: #94a39e;
+    --color-line: #1f2d2a;
+    --color-brand: #13a578;
+    --color-brand-dark: #0e8a63;
+    --color-brand-soft: #0d2a21;
+    --color-sun-soft: #2a2110;
+    --color-sun-ink: #f6c66d;
+    --color-danger: #f26b45;
+    --color-danger-soft: #2b1610;
+    --color-tint: #ffffff;
+  }
+  html {
+    color-scheme: dark;
+  }
+  img {
+    /* soften bright photos slightly on dark backgrounds */
+    filter: brightness(0.96);
+  }
+}
+
 html {
+  color-scheme: light;
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: smooth;
 }

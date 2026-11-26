@@ -15,11 +15,16 @@ Test site: https://dreamer-woad-kappa.vercel.app (payments not switched on yet).
 | 1 | Need posting: 6-step form, drafts, private document upload, consent, submit for review | `/me/needs/new`, `/me/needs` |
 | 2 | Admin verification: checklist, approve, ask for more info or reject, Verified badge with note | `/admin/needs` |
 | 3 | Swipe discovery: drag or buttons, filters (category, state, close to goal), save, full story page with WhatsApp preview image | `/discover`, `/n/[slug]` |
-| 4 | Giving with Paystack: quick amounts, "Finish it", 5% platform fee (capped at ₦5,000, added on top or taken from the gift), guest giving, receipts. Counted **only** by the signed webhook | `/n/[slug]/give`, `/api/paystack/webhook` |
+| 4 | Giving with Paystack: quick amounts, "Finish it", flat 5% platform fee (no cap, added on top or taken from the gift, shown only at checkout), guest giving (ID-verified account needed above ₦200,000), receipts. Counted **only** by the signed webhook | `/n/[slug]/give`, `/api/paystack/webhook` |
 | 5 | Payout to the institution: Paystack Transfer (with bank account check), or record a manual bank transfer | `/admin/payouts` |
-| 6 | Transformation updates: text, milestone, up to 4 photos, admin approval, givers emailed | `/me/needs/[id]/update`, `/admin/updates` |
+| 6 | Progress updates: text, milestone, up to 5 photos and 5 receipts (private or shared with members), admin approval, givers emailed. Allowed while live too | `/me/needs/[id]/update`, `/admin/updates` |
 | 7 | Giver impact page and shareable impact card | `/me`, `/impact/[id]` |
-| 8 | Admin panel: queues, dashboard numbers, reports, ledger, audit log | `/admin` |
+| 8 | Admin panel: queues (time-sensitive first), dashboard numbers, reports, ledger, audit log | `/admin` |
+| 9 | Escrow: needs can go live before checks finish; gifts are held in the Paystack balance, payouts are locked in the database until verified, and unverified needs close after 30 days with every gift refunded | `/admin/needs?status=escrow`, daily job |
+| 10 | One account for giving and getting support, with light ID checks (required to share a need, run an organisation or give over ₦200,000); permanent fraud bans by fingerprint | `/me/verify`, `/admin/people` |
+| 11 | Organisations (orphanages, care homes, NGOs, foundations): CAC documents, official bank account only, profile with up to 10 photos | `/me/organisation`, `/organisations`, `/o/[slug]`, `/admin/organisations` |
+| 12 | Photos: up to 5 per need, private bucket, members only, "on request" and blur-if-sensitive choices, human review plus optional AI screening (Sightengine) | `/admin/photos`, `/me/requests` |
+| 13 | Profiles with optional social links (members, on request, or hidden); urgency and deadlines; light and dark mode following the device | `/me/account`, `/u/[id]`, `/discover` |
 
 Trust and dignity rules built in: nothing is public until an admin approves it; only first names are shown; for under-18s the school name is hidden too; documents, phone numbers and bank details are never public; every admin action and money movement goes in the audit log; the ledger page checks every naira in is matched.
 
@@ -62,6 +67,11 @@ You need three free accounts: **Supabase**, **Paystack** (test mode is fine) and
 | `CRON_SECRET` | Any long random string (protects the daily job: expiry, giver choice emails, update reminders) |
 | `TERMII_API_KEY` | Optional. Sends SMS update reminders through Termii |
 | `CONSENT_SECRET` | Optional. Signs refund/redirect choice links (falls back to the service role key) |
+| `ESCROW_AUTO_PUBLISH` | Optional. `true` puts submitted needs live straight away in escrow (funds held until an admin verifies). Leave unset to review before going live |
+| `IDENTITY_SALT` | Recommended. Long random string used to fingerprint ID numbers and banned identities. Set once and never change it |
+| `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET` | Optional. AI screening of uploaded photos (explicit content removed, graphic content blurred) |
+| `MODERATION_AUTO_APPROVE` | Optional. `true` lets photos that pass AI screening appear without a human review |
+| `DOJAH_APP_ID`, `DOJAH_SECRET_KEY` | Optional. Automatic NIN check during "Get verified"; without it the team reviews IDs by hand |
 | `NEXT_PUBLIC_SITE_URL` | Your Vercel address, e.g. `https://dreamer-xyz.vercel.app` (add after the first deploy, then redeploy) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Optional. Without them, emails (receipts, updates) are written to the Vercel logs instead of sent. |
 
@@ -110,7 +120,8 @@ The full flow (swipe → give → webhook → post a need → verify → payout 
 3. When the total reaches the goal, the need becomes `funded` and stops taking gifts. Admins get a "payout due" email.
 4. The admin checks the school's account with the bank (Paystack account resolve) and sends a Paystack Transfer, or records a manual transfer. `transfer.success` marks the need `paid_out`.
 5. When the person's first update is approved, the need is `completed`.
-6. Live needs expire after 30 days (daily job at 06:00 UTC). Expired needs with gifts show in **Admin → Needs → Expired**, where an admin can pay out the partial amount if the institution agrees, or arrange refunds.
+6. Escrow: a need can be live before it is verified. Gifts sit in the Paystack balance (held by the licensed payment provider, not by Dreamer), and a database trigger refuses any payout until both the need and the payee are verified. If a need is still unverified 30 days after going live, the daily job closes it and refunds every gift through Paystack (or lists it under Expired needs when Paystack isn't connected).
+7. Live needs expire after 30 days (daily job at 06:00 UTC). Expired needs with gifts show in **Admin → Needs → Expired**, where an admin can pay out the partial amount if the institution agrees, or arrange refunds.
 
 ## Before real launch (live money)
 

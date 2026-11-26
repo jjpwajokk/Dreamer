@@ -75,10 +75,30 @@ export function ChecklistForm({ needId, initial }: { needId: string; initial: { 
   );
 }
 
-export function DecisionPanel({ needId, status, institutionName }: { needId: string; status: string; institutionName: string }) {
-  const [note, setNote] = useState(`Fee balance confirmed by phone with ${institutionName}; account name matches.`);
+export function DecisionPanel({ needId, status, institutionName, verified = true }: { needId: string; status: string; institutionName: string; verified?: boolean }) {
+  const [note, setNote] = useState(`Amount confirmed by phone with ${institutionName}; account name matches.`);
   const [message, setMessage] = useState("");
   const { pending, run, feedback } = useAction();
+  if (["live", "funded"].includes(status) && !verified) {
+    return (
+      <div className="space-y-4">
+        <Notice tone="sun">Live in escrow: gifts are held and payouts are locked until you verify.</Notice>
+        <Field label="Public verification note" htmlFor="vnote">
+          <Textarea id="vnote" rows={2} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+        <Button disabled={pending} onClick={() => run(() => approveNeed(needId, note))} className="w-full">Verify and release for payout</Button>
+        {status === "live" ? (
+          <div className="border-t border-line pt-4">
+            <Field label="Pause this need (hides it from givers)" htmlFor="pause">
+              <Input id="pause" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Reason shown to the person who posted it" />
+            </Field>
+            <Button className="mt-3" variant="secondary" size="sm" disabled={pending} onClick={() => run(() => pauseNeed(needId, message))}>Pause need</Button>
+          </div>
+        ) : null}
+        {feedback}
+      </div>
+    );
+  }
   if (status === "live") {
     return (
       <div className="space-y-3">
@@ -103,7 +123,7 @@ export function DecisionPanel({ needId, status, institutionName }: { needId: str
         </Field>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" disabled={pending} onClick={() => run(() => requestInfo(needId, message))}>Ask for more info</Button>
-          <Button variant="danger" size="sm" disabled={pending} onClick={() => run(() => rejectNeed(needId, message))}>Reject</Button>
+          <Button variant="danger" size="sm" disabled={pending} onClick={() => run(() => rejectNeed(needId, message))}>Decline</Button>
         </div>
       </div>
       {feedback}

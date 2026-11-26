@@ -19,7 +19,7 @@ export async function shrinkImage(file: File, maxSide = 1600, quality = 0.82): P
   }
 }
 
-export async function uploadFile(bucket: "need-documents" | "public-media", folder: string, file: File): Promise<{ path?: string; error?: string }> {
+export async function uploadFile(bucket: "need-documents" | "public-media" | "media" | "verification", folder: string, file: File): Promise<{ path?: string; error?: string }> {
   const supabase = createClient();
   const {
     data: { user },

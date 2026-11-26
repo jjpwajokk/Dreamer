@@ -4,7 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { siteUrl, TAGLINE } from "@/lib/config";
 
-const DESCRIPTION = "Back real, verified dreams across Nigeria: school fees, health, rent, small businesses and more. Every need is checked, and every naira goes straight to where it's needed.";
+const DESCRIPTION = "Verified needs, held in escrow, paid directly to the payee. Back real dreams across Nigeria: school fees, health, rent, small businesses and more.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -25,7 +25,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#04100d",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f7f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#060c0b" },
+  ],
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
 };

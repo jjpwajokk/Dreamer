@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BadgeCheck, Building2, CalendarClock, Landmark, MapPin, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Building2, CalendarClock, Hourglass, Landmark, MapPin, ShieldCheck, Users } from "lucide-react";
 import { getPublicNeed } from "@/lib/queries";
 import type { PublicNeed } from "@/lib/types";
 import { CHECK_LABEL, daysLeft, formatDate } from "@/lib/format";
 import { formatNaira, progressPercent } from "@/lib/money";
 import { siteUrl } from "@/lib/config";
 import { sector } from "@/lib/sectors";
-import { CategoryBadge, NeedAvatar, StatusPill, VerifiedBadge } from "@/components/need-bits";
+import { CategoryBadge, EscrowBadge, NeedAvatar, StatusPill, UrgencyBadge, VerifiedBadge } from "@/components/need-bits";
+import { getSession } from "@/lib/auth";
+import { getGallery, getSocials, needOwnerId, signedUrls } from "@/lib/media";
+import { PhotoGallery } from "@/components/photo-gallery";
+import { SocialLinks } from "@/components/social-links";
 import { Card, LinkButton, Progress } from "@/components/ui";
 import { ReportButton } from "@/components/report-button";
 import { ShareButton } from "@/components/share-button";
@@ -28,9 +32,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NeedPage({ params }: Props) {
   const { slug } = await params;
-  const data = await getPublicNeed(slug);
+  const session = await getSession();
+  const data = await getPublicNeed(slug, Boolean(session));
   if (!data) notFound();
   const { need, checks, updates } = data;
+  const viewer = session ? { userId: session.userId, isAdmin: session.profile?.role === "admin" } : null;
+  const ownerId = viewer ? await needOwnerId(need.id) : null;
+  const [gallery, socials, receiptUrls] = await Promise.all([
+    getGallery({ needId: need.id, ownerId }, viewer),
+    ownerId && !need.org_slug ? getSocials({ userId: ownerId }, viewer, { needId: need.id }) : null,
+    viewer ? Promise.all(updates.map((u) => signedUrls(u.receipt_paths ?? []))) : updates.map(() => []),
+  ]);
+  const escrow = !need.verified_at && ["live", "funded"].includes(need.status);
   const pct = progressPercent(need.amount_kobo, need.raised_kobo);
   const left = daysLeft(need.expires_at);
   const url = `${siteUrl()}/n/${need.slug}`;
@@ -49,24 +62,39 @@ export default async function NeedPage({ params }: Props) {
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill status={need.status} />
                 <VerifiedBadge verifiedAt={need.verified_at} />
+                <EscrowBadge verifiedAt={need.verified_at} status={need.status} />
+                {need.status === "live" ? <UrgencyBadge isUrgent={need.is_urgent} deadline={need.deadline} /> : null}
                 <CategoryBadge category={need.category} />
               </div>
               <h1 className="mt-2 font-display text-3xl leading-tight sm:text-4xl">{need.display_name}</h1>
               <p className="mt-1 flex items-center gap-1 text-sm text-muted">
                 <MapPin className="h-4 w-4" aria-hidden /> {need.city ? `${need.city}, ` : ""}{need.state}
               </p>
+              {need.org_slug ? (
+                <p className="mt-1 text-sm">
+                  Shared by <Link href={`/o/${need.org_slug}`} className="font-semibold text-brand hover:underline">{need.org_name}</Link>
+                </p>
+              ) : null}
+              {socials ? <div className="mt-3"><SocialLinks view={socials} target={{ needId: need.id }} name={need.display_name} /></div> : null}
             </div>
           </div>
 
           <blockquote className="mt-6 rounded-2xl border border-sun/25 bg-sun-soft px-5 py-4">
             <p className="font-display text-2xl leading-snug">&ldquo;{need.my_words}&rdquo;</p>
-            <footer className="mt-1 text-sm text-[#6e470b]">In {need.display_name}&apos;s words</footer>
+            <footer className="mt-1 text-sm text-sun-ink">In {need.display_name}&apos;s words</footer>
           </blockquote>
 
           <section className="mt-8">
             <h2 className="font-display text-xl">{need.title}</h2>
             <p className="mt-3 whitespace-pre-line text-[16px] leading-relaxed text-ink/90">{need.story}</p>
           </section>
+
+          {gallery.total || gallery.photos.length ? (
+            <section className="mt-8">
+              <h2 className="mb-3 font-display text-xl">Photos</h2>
+              <PhotoGallery gallery={gallery} signedIn={Boolean(session)} target={{ needId: need.id }} name={need.display_name} next={`/n/${need.slug}`} />
+            </section>
+          ) : null}
 
           <section className="mt-8 grid gap-4 md:grid-cols-2">
             <Card className="p-5">
@@ -80,6 +108,15 @@ export default async function NeedPage({ params }: Props) {
                 ))}
               </ul>
               {need.verified_at ? <p className="mt-3 text-xs text-muted">Verified by the Dreamer team on {formatDate(need.verified_at)}.</p> : null}
+              {escrow ? (
+                <p className="mt-3 flex gap-2 rounded-xl bg-sun-soft p-3 text-xs text-sun-ink">
+                  <Hourglass className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                  <span>
+                    Our checks are still in progress. Every gift is held securely by our licensed payment partner and is only paid out once
+                    checks pass. If they can&apos;t be completed by {need.escrow_deadline ? formatDate(need.escrow_deadline) : "the 30-day deadline"}, every giver is refunded in full.
+                  </span>
+                </p>
+              ) : null}
             </Card>
             <MoneyTrail need={need} place={place} />
           </section>
@@ -94,7 +131,7 @@ export default async function NeedPage({ params }: Props) {
               </p>
             ) : (
               <div className="mt-3 space-y-3">
-                {updates.map((u) => <UpdateCard key={u.id} update={u} />)}
+                {updates.map((u, i) => <UpdateCard key={u.id} update={u} receiptUrls={receiptUrls[i]} />)}
               </div>
             )}
           </section>
@@ -120,7 +157,9 @@ export default async function NeedPage({ params }: Props) {
             ) : null}
             <p className="mt-3 flex items-start gap-2 text-xs text-muted">
               <Landmark className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              Paid straight to {place}, never to a personal account.
+              {need.payout_to === "personal"
+                ? `Paid to ${place}, after our checks.`
+                : `Paid straight to ${place}, after our checks.`}
             </p>
           </Card>
           <Card className="space-y-3 p-5">
@@ -135,8 +174,8 @@ export default async function NeedPage({ params }: Props) {
 
 function MoneyTrail({ need, place }: { need: PublicNeed; place: string }) {
   const steps = [
-    { done: Boolean(need.verified_at), label: "Verified", date: need.verified_at },
     { done: Boolean(need.published_at), label: "Live for givers", date: need.published_at },
+    { done: Boolean(need.verified_at), label: "Verified by Dreamer", date: need.verified_at },
     { done: Boolean(need.funded_at), label: "Fully funded", date: need.funded_at },
     { done: Boolean(need.payout_completed_at || need.paid_out_at), label: `Paid to ${place}`, date: need.payout_completed_at ?? need.paid_out_at },
   ];

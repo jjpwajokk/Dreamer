@@ -81,7 +81,7 @@ export async function notifyUpdatePosted(needId: string) {
   await sendEmail({
     to: await giverEmails(needId),
     subject: `${need.display_name} posted an update`,
-    text: `${need.display_name}, whom you helped, has shared what changed.\n\nRead it here: ${siteUrl()}/n/${need.slug}`,
+    text: `Good news! ${need.display_name}, whom you backed, has shared some progress.\n\nRead it here: ${siteUrl()}/n/${need.slug}`,
   });
 }
 
@@ -117,6 +117,31 @@ export async function notifyNeedExpired(needId: string, displayName: string) {
       ].join("\n"),
     });
   }
+}
+
+/** Tells a giver their gift was refunded because the need couldn't be verified in time. */
+export async function notifyEscrowRefund(contributionId: string) {
+  const admin = createAdminClient();
+  const { data: c } = await admin
+    .from("contributions")
+    .select("giver_email, giver_name, amount_kobo, fee_kobo, tip_kobo, need:needs(display_name)")
+    .eq("id", contributionId)
+    .maybeSingle();
+  if (!c?.giver_email) return;
+  const need = (Array.isArray(c.need) ? c.need[0] : c.need) as { display_name: string } | null;
+  const total = (c.amount_kobo as number) + (c.fee_kobo as number) + (c.tip_kobo as number);
+  await sendEmail({
+    to: c.giver_email as string,
+    subject: "Your gift has been refunded in full",
+    text: [
+      `Hi${c.giver_name ? ` ${c.giver_name}` : ""},`,
+      ``,
+      `We hold every gift safely until a need is fully verified. We couldn't complete the checks for ${need?.display_name ?? "the need you supported"} in time, so we've refunded your ${formatNaira(total)} in full, fees included.`,
+      `It can take 5 to 10 working days to reach your account.`,
+      ``,
+      `Thank you for giving. There are many verified people on Dreamer you can still back: ${siteUrl()}/discover`,
+    ].join("\n"),
+  });
 }
 
 /** Reminds the person helped to post an update, 2 weeks and 3 months after payout. */

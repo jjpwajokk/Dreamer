@@ -49,11 +49,14 @@ export async function passwordAuth(_prev: LoginState, formData: FormData): Promi
     });
     if (error) return { error: error.message };
     if (!data.session) return { sent: email.data };
-    await afterSignIn(data.user!.id, data.user!.email, name);
+    if (await afterSignIn(data.user!.id, data.user!.email, name)) redirect("/account-closed");
   } else {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.data, password });
-    if (error) return { error: error.message === "Invalid login credentials" ? "That email and password don't match." : error.message };
-    await afterSignIn(data.user.id, data.user.email);
+    if (error) {
+      if (/banned/i.test(error.message)) redirect("/account-closed");
+      return { error: error.message === "Invalid login credentials" ? "That email and password don't match." : error.message };
+    }
+    if (await afterSignIn(data.user.id, data.user.email)) redirect("/account-closed");
   }
   redirect(next);
 }

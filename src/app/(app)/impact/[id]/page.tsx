@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const data = await load(id);
   if (!data) return { title: "Impact" };
-  const title = `${data.name} helped ${data.impact.needs.length} ${data.impact.needs.length === 1 ? "person" : "people"} on Dreamer`;
+  const title = `${data.name} backed ${data.impact.needs.length} ${data.impact.needs.length === 1 ? "dream" : "dreams"} on Dreamer`;
   return { title, openGraph: { title }, twitter: { card: "summary_large_image", title } };
 }
 
@@ -38,7 +38,7 @@ export default async function ImpactCardPage({ params }: Props) {
       <Card className="overflow-hidden text-center">
         <div className="bg-gradient-to-br from-brand to-[#1f9d7f] px-6 py-8 text-white">
           <p className="text-sm uppercase tracking-widest text-white/80">Impact card</p>
-          <p className="mt-3 font-display text-3xl font-semibold">{name} helped {impact.needs.length} {impact.needs.length === 1 ? "person" : "people"}</p>
+          <p className="mt-3 font-display text-3xl font-semibold">{name} backed {impact.needs.length} {impact.needs.length === 1 ? "dream" : "dreams"}</p>
           <p className="mt-2 text-white/90">{formatNaira(impact.totalKobo)} given · {paid} paid straight to the bill</p>
         </div>
         <div className="flex flex-wrap justify-center gap-3 p-6">

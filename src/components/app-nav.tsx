@@ -8,7 +8,10 @@ import {
   Banknote,
   BookOpenCheck,
   Bookmark,
+  Building2,
   Compass,
+  Fingerprint,
+  Images,
   Flag,
   HeartHandshake,
   Home,
@@ -24,6 +27,8 @@ import {
   Settings,
   Sparkles,
   Timer,
+  UserRound,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -41,6 +46,7 @@ function groups(user: NavUser): Group[] {
       title: "Give",
       items: [
         { href: "/discover", label: "Discover needs", Icon: Compass, match: (p) => p.startsWith("/discover") || p.startsWith("/n/") },
+        { href: "/organisations", label: "Organisations", Icon: Building2, match: (p) => p.startsWith("/organisations") || p.startsWith("/o/") },
         ...(user.signedIn
           ? [
               { href: "/me", label: "My impact", Icon: HeartHandshake, match: (p: string) => p === "/me" || p.startsWith("/impact") },
@@ -50,21 +56,39 @@ function groups(user: NavUser): Group[] {
       ],
     },
     {
-      title: "Ask for help",
+      title: "Get support",
       items: [
-        { href: "/me/needs/new", label: "Post a need", Icon: PlusCircle, match: (p) => p === "/me/needs/new" },
+        { href: "/me/needs/new", label: "Share a need", Icon: PlusCircle, match: (p) => p === "/me/needs/new" },
         ...(user.signedIn
-          ? [{ href: "/me/needs", label: "My needs", Icon: ListChecks, match: (p: string) => p.startsWith("/me/needs") && p !== "/me/needs/new" }]
+          ? [
+              { href: "/me/needs", label: "My needs", Icon: ListChecks, match: (p: string) => p.startsWith("/me/needs") && p !== "/me/needs/new" },
+              { href: "/me/organisation", label: "My organisation", Icon: Building2 },
+            ]
           : []),
       ],
     },
+    ...(user.signedIn
+      ? [
+          {
+            title: "You",
+            items: [
+              { href: "/me/account", label: "Profile & socials", Icon: UserRound },
+              { href: "/me/verify", label: "Get verified", Icon: Fingerprint },
+              { href: "/me/requests", label: "Requests to connect", Icon: Users },
+            ],
+          },
+        ]
+      : []),
   ];
   if (user.isAdmin) {
     out.push({
       title: "Admin",
       items: [
         { href: "/admin", label: "Overview", Icon: LayoutDashboard, match: (p) => p === "/admin" },
-        { href: "/admin/needs?status=submitted", label: "Verification", Icon: BadgeCheck, match: (p) => p.startsWith("/admin/needs") },
+        { href: "/admin/needs?status=submitted", label: "Needs", Icon: BadgeCheck, match: (p) => p.startsWith("/admin/needs") },
+        { href: "/admin/people", label: "People", Icon: Fingerprint },
+        { href: "/admin/organisations", label: "Organisations", Icon: Building2 },
+        { href: "/admin/photos", label: "Photos", Icon: Images },
         { href: "/admin/payouts", label: "Payouts", Icon: Banknote },
         { href: "/admin/updates", label: "Updates", Icon: Megaphone },
         { href: "/admin/expired", label: "Expired needs", Icon: Timer },
@@ -130,7 +154,7 @@ function AccountBlock({ user }: { user: NavUser }) {
     return (
       <div className="rounded-2xl border border-white/10 bg-white/[.04] p-4">
         <p className="text-sm font-semibold text-white">Join Dreamer</p>
-        <p className="mt-1 text-xs leading-relaxed text-white/55">Follow the people you help and see every update.</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/55">One account to give, share a need, and follow every story.</p>
         <Link href="/login" className="mt-3 flex h-9 items-center justify-center gap-2 rounded-lg bg-white text-sm font-semibold text-night hover:bg-white/90">
           <LogIn className="h-4 w-4" aria-hidden /> Sign in
         </Link>

@@ -98,7 +98,7 @@ export function SwipeDeck({ needs }: { needs: PublicNeed[] }) {
           className="flex h-12 w-12 items-center justify-center rounded-full border border-line bg-surface shadow-sm transition hover:scale-105"
           aria-label={`Save ${current.display_name}`}
         >
-          <Bookmark className="h-5 w-5 text-[#8a5a10]" aria-hidden />
+          <Bookmark className="h-5 w-5 text-sun-ink" aria-hidden />
         </button>
         <button
           onClick={() => handle("right")}
@@ -111,7 +111,7 @@ export function SwipeDeck({ needs }: { needs: PublicNeed[] }) {
       <p className="mt-3 text-center text-xs text-muted">Swipe right to give · left to pass · up to save · tap to read the story</p>
 
       {toast ? (
-        <div role="status" className="fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-white shadow-xl sm:bottom-8">
+        <div role="status" className="fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-bg shadow-xl sm:bottom-8">
           <span>{toast.text}</span>
           {toast.href ? <Link href={toast.href} className="font-semibold text-sun">{toast.cta}</Link> : null}
         </div>
@@ -171,7 +171,7 @@ function SwipeCard({ need, onSwipe, onOpen }: { need: PublicNeed; onSwipe: (d: D
       <motion.span style={{ opacity: passOpacity }} className="pointer-events-none absolute right-5 top-6 rotate-[10deg] rounded-xl border-4 border-muted px-3 py-1 text-2xl font-black tracking-wider text-muted">
         PASS
       </motion.span>
-      <motion.span style={{ opacity: saveOpacity }} className="pointer-events-none absolute inset-x-0 bottom-28 mx-auto w-fit rounded-xl border-4 border-sun px-3 py-1 text-2xl font-black tracking-wider text-[#8a5a10]">
+      <motion.span style={{ opacity: saveOpacity }} className="pointer-events-none absolute inset-x-0 bottom-28 mx-auto w-fit rounded-xl border-4 border-sun px-3 py-1 text-2xl font-black tracking-wider text-sun-ink">
         SAVE
       </motion.span>
     </motion.div>
@@ -186,7 +186,7 @@ function CardFace({ need, under = false }: { need: PublicNeed; under?: boolean }
       className={`absolute inset-0 flex select-none flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-xl shadow-black/5 ${under ? "scale-[0.96] opacity-70" : ""}`}
       aria-hidden={under}
     >
-      <div className="relative flex flex-1 flex-col justify-between bg-gradient-to-b from-sun-soft via-[#fbf3e6] to-surface p-5">
+      <div className="relative flex flex-1 flex-col justify-between bg-gradient-to-b from-sun-soft via-sun-soft/50 to-surface p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <NeedAvatar name={need.display_name} photoPath={need.cover_photo_path} size={64} />

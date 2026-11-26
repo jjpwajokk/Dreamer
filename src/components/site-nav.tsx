@@ -40,7 +40,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
 export function SiteFooter() {
   const cols = [
     { title: "Give", links: [["Discover needs", "/discover"], ["How giving works", "/#how"], ["Organisations", "/organisations"]] },
-    { title: "Get help", links: [["Post a need", "/me/needs/new"], ["What we verify", "/#trust"], ["Sectors", "/#sectors"]] },
+    { title: "Get support", links: [["Share a need", "/me/needs/new"], ["What we verify", "/#trust"], ["Sectors", "/#sectors"]] },
     { title: "Dreamer", links: [["About", "/about"], ["Privacy", "/privacy"], ["Terms", "/terms"]] },
   ] as const;
   return (

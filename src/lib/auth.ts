@@ -28,7 +28,13 @@ export const getSession = cache(async (): Promise<{ userId: string; email: strin
 export async function requireUser(next = "/me") {
   const session = await getSession();
   if (!session) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (session.profile?.banned_at) redirect("/account-closed");
   return session;
+}
+
+/** Has this member shared the light identity details we ask for? */
+export function kycDone(session: { profile: Profile | null } | null): boolean {
+  return Boolean(session?.profile && ["submitted", "verified"].includes(session.profile.kyc_status));
 }
 
 export async function requireAdmin() {
@@ -40,6 +46,6 @@ export async function requireAdmin() {
 /** For server actions: returns the admin session or throws (no redirect). */
 export async function assertAdmin() {
   const session = await getSession();
-  if (!session || session.profile?.role !== "admin") throw new Error("Only admins can do this.");
+  if (!session || session.profile?.role !== "admin" || session.profile.banned_at) throw new Error("Only admins can do this.");
   return session;
 }

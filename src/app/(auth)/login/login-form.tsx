@@ -43,7 +43,7 @@ export function LoginForm({ next, initialMode = "signin" }: { next: string; init
 
   return (
     <div className="space-y-6">
-      <div className="flex rounded-xl bg-black/[.05] p-1" role="tablist" aria-label="Sign in method">
+      <div className="flex rounded-xl bg-tint/[.05] p-1" role="tablist" aria-label="Sign in method">
         {tab("signin", "Sign in")}
         {tab("signup", "Create account")}
       </div>

@@ -6,6 +6,7 @@ import { Button, Field, Input, Notice } from "@/components/ui";
 import { cn } from "@/lib/format";
 import {
   FEE_PERCENT,
+  KYC_GIFT_THRESHOLD_KOBO,
   MIN_GIFT_KOBO,
   QUICK_PICKS_KOBO,
   formatNaira,
@@ -87,6 +88,11 @@ export function GiveForm({
               <Input id="amount" inputMode="numeric" className="tabular pl-8 text-lg font-semibold" value={amountText} onChange={(e) => setAmountText(e.target.value)} />
             </div>
           </Field>
+          {amountKobo > KYC_GIFT_THRESHOLD_KOBO ? (
+            <p className="mt-2 text-xs text-muted">
+              Gifts above {formatNaira(KYC_GIFT_THRESHOLD_KOBO)} need a verified account (a quick ID check that keeps everyone safe). <a href="/me/verify" className="font-semibold text-brand underline">Get verified</a>
+            </p>
+          ) : null}
         </div>
       </fieldset>
 

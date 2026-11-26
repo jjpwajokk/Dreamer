@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDate, milestoneLabel } from "@/lib/format";
 import { publicMediaUrl } from "@/lib/storage";
+import { signedUrls } from "@/lib/media";
 import { Badge, Card, EmptyState, PageTitle } from "@/components/ui";
 import { UpdateReview } from "../admin-controls";
 
@@ -12,12 +13,13 @@ export default async function AdminUpdates() {
   const admin = createAdminClient();
   const { data } = await admin.from("updates").select("*, need:needs(id, display_name, slug)").eq("status", "pending").order("created_at");
   const updates = data ?? [];
+  const receipts = await Promise.all(updates.map((u) => signedUrls((u.receipt_paths as string[] | null) ?? [], "media", 900)));
   return (
     <div>
-      <PageTitle eyebrow="Admin" title="Updates to review" subtitle="Check photos for private details (ID numbers, full names of minors) before approving." />
+      <PageTitle eyebrow="Admin" title="Updates to review" subtitle="Check photos and receipts for private details (ID numbers, full names of minors) before approving. Receipts should match the payee and amount." />
       {updates.length === 0 ? <EmptyState title="All caught up" /> : (
         <ul className="space-y-3">
-          {updates.map((u) => {
+          {updates.map((u, idx) => {
             const need = Array.isArray(u.need) ? u.need[0] : u.need;
             return (
               <li key={u.id}>
@@ -37,6 +39,12 @@ export default async function AdminUpdates() {
                         </a>
                       ))}
                     </div>
+                  ) : null}
+                  {receipts[idx]?.length ? (
+                    <p className="flex flex-wrap items-center gap-2 text-sm">
+                      Receipts ({u.receipts_public ? "shared with members" : "private to our team"}):
+                      {receipts[idx]!.map((r, i) => (r ? <a key={r} href={r} target="_blank" rel="noopener noreferrer" className="text-brand underline">#{i + 1}</a> : null))}
+                    </p>
                   ) : null}
                   <UpdateReview updateId={u.id} />
                 </Card>

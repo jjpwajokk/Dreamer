@@ -135,6 +135,19 @@ begin
   assert r->>'result' = 'unknown_reference', 'unknown reference not reported';
 end $$;
 
+-- 6a. Escrow: no payout while the need is unverified
+do $$ begin
+  begin
+    insert into public.payouts (need_id, institution_id, amount_kobo, reference)
+      values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 18500000, 'payout-escrow');
+    raise exception 'FAIL: payout allowed before verification';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+end $$;
+update public.needs set verified_at = now() where id = '20000000-0000-0000-0000-000000000001';
+update public.institutions set verified_at = now() where id = '10000000-0000-0000-0000-000000000001';
+
 -- 6. Payout: transfer success marks paid_out; duplicate ignored
 insert into public.payouts (need_id, institution_id, amount_kobo, reference)
   values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 18500000, 'payout-1');
@@ -264,6 +277,141 @@ reset role;
 do $$ begin
   assert (select sum(amount_kobo) from public.contributions where status = 'success')
        = (select sum(raised_kobo) from public.needs), 'ledger mismatch after fees/redirects';
+end $$;
+
+
+-- 15. Escrow: an unverified need past its deadline is closed and every gift marked for refund
+reset role;
+insert into public.needs (id, slug, category, title, story, my_words, display_name, state, amount_kobo, institution_id, status, published_at, escrow_deadline, created_by, beneficiary_id)
+  values ('20000000-0000-0000-0000-0000000000e1', 'escrow-need', 'education', 'Escrow test need', repeat('x', 50), 'words', 'Bola', 'Lagos', 5000000,
+          '10000000-0000-0000-0000-000000000001', 'live', now() - interval '31 days', now() - interval '1 day',
+          '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a');
+insert into public.contributions (need_id, giver_email, amount_kobo, fee_kobo, paystack_reference)
+  values ('20000000-0000-0000-0000-0000000000e1', 'g@example.com', 200000, 10000, 'ref-esc');
+do $$
+declare r jsonb; n integer;
+begin
+  r := public.record_paystack_charge('ref-esc', 210000, 'card');
+  assert r->>'result' = 'ok', 'escrow charge not ok';
+  n := public.close_unverified_needs();
+  assert n >= 1, 'unverified need not closed';
+  assert (select status || '/' || expiry_reason from public.needs where slug = 'escrow-need') = 'expired/unverified', 'escrow need not marked';
+  assert (select expiry_choice from public.contributions where paystack_reference = 'ref-esc') = 'refund', 'gift not marked for refund';
+  begin
+    update public.contributions set status = 'redirected' where paystack_reference = 'ref-esc';
+    raise exception 'FAIL: unverified gift redirected';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  r := public.record_refund((select id from public.contributions where paystack_reference = 'ref-esc'));
+  assert r->>'result' = 'ok', 'escrow refund failed';
+end $$;
+
+-- 16. Profiles: members can't verify themselves or lift a ban
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+do $$ begin
+  update public.profiles set occupation = 'Teacher', workplace = 'Jos' where user_id = auth.uid();
+  begin
+    update public.profiles set kyc_status = 'verified' where user_id = auth.uid();
+    raise exception 'FAIL: self-verified KYC';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+end $$;
+
+-- 17. Organisations: owners can't verify themselves; org needs only pay the org account
+insert into public.organisations (id, slug, owner_id, name, org_type, status, verified_at)
+  values ('30000000-0000-0000-0000-000000000001', 'hope-home', '00000000-0000-0000-0000-00000000000b', 'Hope Children''s Home', 'orphanage', 'verified', now());
+do $$ begin
+  assert (select status from public.organisations where slug = 'hope-home') = 'draft', 'org status not forced to draft';
+  assert (select verified_at from public.organisations where slug = 'hope-home') is null, 'org self-verified';
+  begin
+    update public.organisations set status = 'verified' where slug = 'hope-home';
+    raise exception 'FAIL: org self-verified on update';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+end $$;
+reset role;
+update public.organisations set status = 'verified', verified_at = now() where slug = 'hope-home';
+insert into public.institutions (id, name, type, org_id, account_number, bank_code, verified_at)
+  values ('10000000-0000-0000-0000-0000000000a1', 'Hope Children''s Home', 'organisation', '30000000-0000-0000-0000-000000000001', '0123456780', '058', now());
+insert into public.needs (id, slug, category, title, story, my_words, display_name, state, amount_kobo, institution_id, status, org_id, verified_at, created_by, beneficiary_id)
+  values ('20000000-0000-0000-0000-0000000000a1', 'hope-need', 'education', 'Term fees for 12 children', repeat('x', 50), 'words', 'Hope', 'Plateau', 5000000,
+          '10000000-0000-0000-0000-000000000001', 'funded', '30000000-0000-0000-0000-000000000001', now(),
+          '00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b');
+do $$ begin
+  begin
+    insert into public.payouts (need_id, institution_id, amount_kobo, reference)
+      values ('20000000-0000-0000-0000-0000000000a1', '10000000-0000-0000-0000-000000000001', 100000, 'po-org-wrong');
+    raise exception 'FAIL: org need paid to a non-org account';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  begin
+    update public.needs set payout_to = 'personal' where slug = 'hope-need';
+    raise exception 'FAIL: org need switched to personal payout';
+  exception when check_violation then null;
+  end;
+end $$;
+
+-- 18. Photos: at most 5 per need, 10 per organisation
+do $$
+declare i integer;
+begin
+  for i in 1..5 loop
+    insert into public.media (owner_id, need_id, purpose, storage_path) values ('00000000-0000-0000-0000-00000000000a', '20000000-0000-0000-0000-000000000001', 'need', 'p' || i);
+  end loop;
+  begin
+    insert into public.media (owner_id, need_id, purpose, storage_path) values ('00000000-0000-0000-0000-00000000000a', '20000000-0000-0000-0000-000000000001', 'need', 'p6');
+    raise exception 'FAIL: sixth need photo allowed';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  for i in 1..10 loop
+    insert into public.media (owner_id, org_id, purpose, storage_path) values ('00000000-0000-0000-0000-00000000000b', '30000000-0000-0000-0000-000000000001', 'org', 'o' || i);
+  end loop;
+  begin
+    insert into public.media (owner_id, org_id, purpose, storage_path) values ('00000000-0000-0000-0000-00000000000b', '30000000-0000-0000-0000-000000000001', 'org', 'o11');
+    raise exception 'FAIL: eleventh org photo allowed';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+end $$;
+
+-- 19. Socials: an object only, valid visibility; uncapped 5% fee; profile-level requests; urgency
+do $$ begin
+  update public.profiles set socials = '{"instagram":"https://instagram.com/ada"}', socials_visibility = 'on_request'
+    where user_id = '00000000-0000-0000-0000-00000000000a';
+  begin
+    update public.profiles set socials = '["x"]' where user_id = '00000000-0000-0000-0000-00000000000a';
+    raise exception 'FAIL: socials accepted a non-object';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.profiles set socials_visibility = 'everyone' where user_id = '00000000-0000-0000-0000-00000000000a';
+    raise exception 'FAIL: unknown socials visibility accepted';
+  exception when check_violation then null;
+  end;
+  -- A ₦1,000,000 gift carries a ₦50,000 fee now that there's no cap.
+  insert into public.contributions (need_id, giver_email, amount_kobo, fee_kobo, paystack_reference)
+    values ('20000000-0000-0000-0000-000000000001', 'big@example.com', 100000000, 5000000, 'ref-nocap');
+  begin
+    insert into public.contributions (need_id, giver_email, amount_kobo, fee_kobo, paystack_reference)
+      values ('20000000-0000-0000-0000-000000000001', 'odd@example.com', 100000, 200000, 'ref-badfee');
+    raise exception 'FAIL: fee larger than the gift accepted';
+  exception when check_violation then null;
+  end;
+  insert into public.media_requests (requester_id, owner_id) values ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000a');
+  begin
+    insert into public.media_requests (requester_id, owner_id) values ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000a');
+    raise exception 'FAIL: duplicate profile request';
+  exception when unique_violation then null;
+  end;
+  update public.needs set is_urgent = true, deadline = current_date + 5 where id = '20000000-0000-0000-0000-000000000001';
+  assert exists (select 1 from public.public_needs where is_urgent and deadline is not null) or
+         not exists (select 1 from public.public_needs where id = '20000000-0000-0000-0000-000000000001'),
+         'urgency visible on public needs';
 end $$;
 
 \echo 'ALL DATABASE TESTS PASSED'

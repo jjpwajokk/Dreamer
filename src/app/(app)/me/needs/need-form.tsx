@@ -11,7 +11,8 @@ import { CATEGORIES, PAYEE_LABEL, SECTORS, sector, type PayeeType } from "@/lib/
 import { uploadFile } from "@/lib/upload";
 import { publicMediaUrl } from "@/lib/storage";
 import type { Institution, Need } from "@/lib/types";
-import { recordDocument, removeDocument, saveBasics, saveInstitution, saveStory, setCoverPhoto, submitNeed } from "./actions";
+import { recordDocument, removeDocument, saveBasics, saveInstitution, savePersonalAccount, saveStory, setCoverPhoto, submitNeed } from "./actions";
+import { PhotoManager, type ManagedPhoto } from "@/components/photo-manager";
 
 type Doc = { id: string; kind: string; file_name: string | null };
 type Bank = { name: string; code: string };
@@ -23,11 +24,18 @@ export function NeedForm({
   institution,
   documents,
   banks,
+  extras,
 }: {
   need: Need | null;
   institution: Institution | null;
   documents: Doc[];
   banks: Bank[];
+  extras?: {
+    orgs: { id: string; name: string; last4: string | null }[];
+    kycStatus: string;
+    personal: { bank_code: string | null; account_number: string | null; account_name: string | null } | null;
+    photos: ManagedPhoto[];
+  };
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -35,6 +43,16 @@ export function NeedForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
+  const orgs = extras?.orgs ?? [];
+  const [orgId, setOrgId] = useState<string | null>(need?.org_id ?? null);
+  const org = orgs.find((o) => o.id === orgId) ?? null;
+  const [personalOpen, setPersonalOpen] = useState(Boolean(extras?.personal));
+  const [personal, setPersonal] = useState({
+    bank_code: extras?.personal?.bank_code ?? "",
+    account_number: extras?.personal?.account_number ?? "",
+    account_name: extras?.personal?.account_name ?? "",
+  });
+  const kycOk = ["submitted", "verified"].includes(extras?.kycStatus ?? "none");
   const [basics, setBasics] = useState({
     relationship: need?.relationship ?? "self",
     category: need?.category ?? "education",
@@ -45,6 +63,8 @@ export function NeedForm({
     contact_phone: need?.contact_phone ?? "",
     title: need?.title ?? "",
     amountText: need ? String(need.amount_kobo / 100) : "",
+    is_urgent: need?.is_urgent ?? false,
+    deadline: need?.deadline ?? "",
   });
   const [story, setStory] = useState({ story: need?.story ?? "", my_words: need?.my_words ?? "" });
   const [inst, setInst] = useState({
@@ -89,14 +109,24 @@ export function NeedForm({
         return;
       }
       return run(
-        () => saveBasics(needId, { ...basics, amount_kobo: amount_kobo ?? 0 }),
+        () => saveBasics(needId, { ...basics, org_id: orgId, amount_kobo: amount_kobo ?? 0 }),
         nextStep,
       );
     }
     if (step === 2) return run(() => saveStory(needId!, story), nextStep);
     if (step === 3) {
       const bank = banks.find((b) => b.code === inst.bank_code);
-      return run(() => saveInstitution(needId!, { ...inst, bank_name: bank?.name }), nextStep);
+      return run(async () => {
+        const res = await saveInstitution(needId!, { ...inst, bank_name: bank?.name });
+        if (res.error || org) return res;
+        if (personalOpen && personal.account_number) {
+          const p = await savePersonalAccount(needId!, { ...personal, bank_name: banks.find((b) => b.code === personal.bank_code)?.name });
+          if (p.error) return p;
+        } else if (!personalOpen && extras?.personal) {
+          await savePersonalAccount(needId!, null);
+        }
+        return res;
+      }, nextStep);
     }
     setStep(nextStep);
   }
@@ -134,7 +164,7 @@ export function NeedForm({
       <ol className="mb-6 flex gap-1" aria-label="Progress">
         {STEPS.map((label, i) => (
           <li key={label} className="flex-1">
-            <div className={cn("h-1.5 rounded-full", i <= step ? "bg-brand" : "bg-black/10")} />
+            <div className={cn("h-1.5 rounded-full", i <= step ? "bg-brand" : "bg-tint/10")} />
             <span className={cn("mt-1 hidden text-[11px] sm:block", i === step ? "font-semibold text-ink" : "text-muted")}>{label}</span>
           </li>
         ))}
@@ -149,13 +179,25 @@ export function NeedForm({
       <Card className="space-y-5 p-5">
         {step === 0 ? (
           <>
-            <h2 className="font-display text-2xl font-semibold">Who is this need for?</h2>
-            <Field label="This need is for" htmlFor="relationship">
+            <h2 className="font-display text-2xl font-semibold">Who is this for?</h2>
+            {orgs.length ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button type="button" onClick={() => setOrgId(null)} aria-pressed={!orgId} className={cn("rounded-xl border px-3 py-3 text-left text-sm", !orgId ? "border-brand bg-brand-soft" : "border-line")}>
+                  <span className="block font-semibold">A person</span><span className="text-xs text-muted">Me, my child, a student, a patient…</span>
+                </button>
+                {orgs.map((o) => (
+                  <button key={o.id} type="button" onClick={() => { setOrgId(o.id); setBasics({ ...basics, relationship: "organisation", display_name: basics.display_name || o.name.split(/\s+/)[0]! }); }} aria-pressed={orgId === o.id} className={cn("rounded-xl border px-3 py-3 text-left text-sm", orgId === o.id ? "border-brand bg-brand-soft" : "border-line")}>
+                    <span className="block font-semibold">{o.name}</span><span className="text-xs text-muted">Your verified organisation. Paid to its official account.</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {org ? null : <Field label="This need is for" htmlFor="relationship">
               <Select id="relationship" value={basics.relationship} onChange={(e) => setBasics({ ...basics, relationship: e.target.value })}>
-                {Object.entries(RELATIONSHIP_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {Object.entries(RELATIONSHIP_LABEL).filter(([v]) => v !== "organisation").map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </Select>
-            </Field>
-            <Field label={forSelf ? "Your first name" : "Their first name"} htmlFor="display_name" hint="Only the first name is ever shown publicly.">
+            </Field>}
+            <Field label={org ? "Short name shown to givers" : forSelf ? "Your first name" : "Their first name"} htmlFor="display_name" hint={org ? "For example your organisation's short name." : "Only the first name is ever shown publicly."}>
               <Input id="display_name" value={basics.display_name} onChange={(e) => setBasics({ ...basics, display_name: e.target.value })} maxLength={40} autoComplete="given-name" />
             </Field>
             <label className="flex items-start gap-3 text-sm">
@@ -223,6 +265,18 @@ export function NeedForm({
               <Input id="amount" inputMode="numeric" placeholder="185000" value={basics.amountText} onChange={(e) => setBasics({ ...basics, amountText: e.target.value })} />
             </Field>
             {amountKobo ? <p className="text-sm text-muted">That&apos;s {formatNaira(amountKobo)}.</p> : null}
+            <div className="space-y-3 rounded-2xl border border-line p-4">
+              <label className="flex items-start gap-3 text-sm">
+                <input type="checkbox" className="mt-0.5 h-5 w-5 accent-[var(--color-brand)]" checked={basics.is_urgent} onChange={(e) => setBasics({ ...basics, is_urgent: e.target.checked })} />
+                <span>
+                  <span className="font-semibold">This is time-sensitive</span>
+                  <span className="block text-muted">For example a hospital bill due now, or a school fee deadline. Our team reviews time-sensitive needs first.</span>
+                </span>
+              </label>
+              <Field label="Deadline (optional)" htmlFor="deadline" hint="The date the payment is due. Givers can sort by deadline.">
+                <Input id="deadline" type="date" min={new Date().toISOString().slice(0, 10)} value={basics.deadline} onChange={(e) => setBasics({ ...basics, deadline: e.target.value })} />
+              </Field>
+            </div>
           </>
         ) : null}
 
@@ -241,10 +295,16 @@ export function NeedForm({
           </>
         ) : null}
 
-        {step === 3 ? (
+        {step === 3 && org ? (
+          <>
+            <h2 className="font-display text-2xl font-semibold">Where the money goes</h2>
+            <Notice>Gifts for {org.name} are paid only to its verified official account{org.last4 ? ` ending ${org.last4}` : ""}. Nothing else to add here.</Notice>
+          </>
+        ) : null}
+        {step === 3 && !org ? (
           <>
             <h2 className="font-display text-2xl font-semibold">Where should the money go?</h2>
-            <p className="text-sm text-muted">We pay the {payeeName} directly, never a personal account of the person in need. We&apos;ll call them to confirm the amount and their account.</p>
+            <p className="text-sm text-muted">We pay the {payeeName} directly, so every naira lands exactly where it's meant to. We&apos;ll call them to confirm the amount and their account.</p>
             <div className="grid grid-cols-2 gap-2">
               {sct.payeeTypes.map((t) => (
                 <button type="button" key={t} onClick={() => setInst({ ...inst, type: t })} className={cn("rounded-xl border px-3 py-2 text-sm font-semibold", inst.type === t ? "border-brand bg-brand-soft" : "border-line")}>
@@ -291,6 +351,33 @@ export function NeedForm({
                 </Field>
               </div>
             </div>
+            <div className="rounded-xl border border-line p-4">
+              <label className="flex items-start gap-3 text-sm">
+                <input type="checkbox" className="mt-0.5 h-5 w-5 accent-[var(--color-brand)]" checked={personalOpen} onChange={(e) => setPersonalOpen(e.target.checked)} />
+                <span>
+                  <span className="font-semibold">Also add {forSelf ? "your" : "their"} own bank account (optional)</span>
+                  <span className="block text-xs text-muted">We pay the {payeeName} directly whenever we can. We only use this account if they can&apos;t receive a transfer, after we&apos;ve verified everything. It must be in {forSelf ? "your" : `${who}'s`} name.</span>
+                </span>
+              </label>
+              {personalOpen ? (
+                <div className="mt-4 space-y-4">
+                  <Field label="Bank" htmlFor="p-bank">
+                    <Select id="p-bank" value={personal.bank_code} onChange={(e) => setPersonal({ ...personal, bank_code: e.target.value })}>
+                      <option value="">Choose…</option>
+                      {banks.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+                    </Select>
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Account number" htmlFor="p-acct">
+                      <Input id="p-acct" inputMode="numeric" maxLength={10} value={personal.account_number} onChange={(e) => setPersonal({ ...personal, account_number: e.target.value.replace(/\D/g, "") })} />
+                    </Field>
+                    <Field label="Account name" htmlFor="p-name">
+                      <Input id="p-name" value={personal.account_name} onChange={(e) => setPersonal({ ...personal, account_name: e.target.value })} />
+                    </Field>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </>
         ) : null}
 
@@ -302,8 +389,8 @@ export function NeedForm({
             <UploadRow label="ID (NIN slip, student ID or similar)" kind="id" docs={docs} uploading={uploading} onUpload={onUpload} onRemove={(id) => run(async () => { const r = await removeDocument(id); if (r.ok) setDocs((d) => d.filter((x) => x.id !== id)); return r; })} />
             <UploadRow label="Supporting letter from the school, doctor, landlord or referrer (optional)" kind="letter" docs={docs} uploading={uploading} onUpload={onUpload} onRemove={(id) => run(async () => { const r = await removeDocument(id); if (r.ok) setDocs((d) => d.filter((x) => x.id !== id)); return r; })} />
             <div className="rounded-xl border border-dashed border-line p-4">
-              <p className="text-sm font-semibold">Profile photo (optional)</p>
-              <p className="mt-1 text-xs text-muted">Faces are optional. Without a photo, we show initials. This photo is public.</p>
+              <p className="text-sm font-semibold">Main photo (optional)</p>
+              <p className="mt-1 text-xs text-muted">Faces are optional. Without a photo, we show initials. Only signed-in members can see photos.</p>
               <div className="mt-3 flex items-center gap-3">
                 {cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -319,15 +406,28 @@ export function NeedForm({
           </>
         ) : null}
 
+        {step === 4 && needId ? (
+          <div className="space-y-3 border-t border-line pt-5">
+            <p className="text-sm font-semibold">More photos (optional, up to 5)</p>
+            <p className="text-xs text-muted">At school, at the shop, the hospital, the work in progress… You choose who sees each one: all signed-in members, or only people you approve. Medical photos can be blurred until someone chooses to look.</p>
+            <PhotoManager scope={{ needId, purpose: "need" }} photos={extras?.photos ?? []} max={5} />
+          </div>
+        ) : null}
+
         {step === 5 ? (
           <>
             <h2 className="font-display text-2xl font-semibold">Check and submit</h2>
+            {!kycOk ? (
+              <Notice tone="sun">
+                One more thing: please <Link href="/me/verify" className="font-semibold underline" target="_blank">get verified</Link> (about 3 minutes). It&apos;s how givers know every need comes from a real person. Your draft is saved.
+              </Notice>
+            ) : null}
             <dl className="divide-y divide-line rounded-xl border border-line text-sm">
               {[
                 ["Name shown", basics.display_name],
                 ["Need", basics.title],
                 ["Amount", amountKobo ? formatNaira(amountKobo) : "-"],
-                ["Paid to", inst.name],
+                ["Paid to", org ? org.name : inst.name],
                 ["In their words", story.my_words],
                 ["Documents", `${docs.length} uploaded`],
               ].map(([k, v]) => (
@@ -372,7 +472,7 @@ export function NeedForm({
               onClick={() =>
                 run(async () => {
                   const res = await submitNeed(needId!, consent);
-                  if (res.ok) router.push("/me/needs?submitted=1");
+                  if (res.ok) router.push(res.id ? `/me/needs?submitted=live` : "/me/needs?submitted=1");
                   return res;
                 })
               }

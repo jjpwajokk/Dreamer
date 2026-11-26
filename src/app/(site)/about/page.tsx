@@ -11,13 +11,13 @@ const steps = [
   { Icon: ShieldCheck, title: "We verify it", text: "Our team checks the documents and calls the school bursar, hospital billing office, landlord or supplier to confirm the amount and the account. Only then does it go live with a Verified badge." },
   { Icon: HandHeart, title: "Givers meet them", text: "Givers swipe through verified needs, or browse by sector and state. Give from ₦1,000 by card, bank transfer or USSD through Paystack." },
   { Icon: Landmark, title: "We pay the bill directly", text: "When a need is fully funded, we pay the school, hospital, landlord or supplier directly. The need page shows the date and amount. No money ever goes to a personal account." },
-  { Icon: MessageCircleHeart, title: "They tell you what changed", text: "The person you helped posts an update: back in class, discharged, moved in, business running. You get an email and see it in My impact." },
+  { Icon: MessageCircleHeart, title: "They tell you what changed", text: "The person you backed posts an update: back in class, discharged, moved in, business running. You get an email and see it in My impact." },
 ];
 
 const principles = [
   ["Dignity over desperation", "We never rank people by how sad their story is. Each person writes their own line. Swiping left means “Pass”, never “Reject”. Faces are optional and only first names are shown."],
   ["Transparency", "Every need shows what we verified, how much has been raised, and where the money went: which payee, and on what date."],
-  ["Connection over transactions", "Updates are at the heart of Dreamer. When someone you helped posts an update, you hear about it."],
+  ["Connection over transactions", "Updates are at the heart of Dreamer. When someone you backed posts an update, you hear about it."],
   ["Trust is the product", "Money goes to verified institutions and businesses, never to personal accounts. Nothing goes live until our team has checked it."],
 ];
 
@@ -110,7 +110,7 @@ export default function AboutPage() {
           <p className="mx-auto mt-2 max-w-md text-white/65">Every person on Dreamer has been checked by our team.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <LinkButton href="/discover" size="lg">Start giving</LinkButton>
-            <LinkButton href="/me/needs/new" size="lg" variant="secondary">Post a need</LinkButton>
+            <LinkButton href="/me/needs/new" size="lg" variant="secondary">Share a need</LinkButton>
           </div>
         </section>
       </div>

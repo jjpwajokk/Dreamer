@@ -1,11 +1,20 @@
 import Image from "next/image";
-import { Sparkles } from "lucide-react";
+import { FileText, Sparkles } from "lucide-react";
 import type { PublicUpdate } from "@/lib/types";
 import { formatDate, milestoneLabel } from "@/lib/format";
 import { publicMediaUrl } from "@/lib/storage";
 import { Badge, Card } from "@/components/ui";
 
-export function UpdateCard({ update, heading }: { update: PublicUpdate; heading?: React.ReactNode }) {
+export function UpdateCard({
+  update,
+  heading,
+  receiptUrls = [],
+}: {
+  update: PublicUpdate;
+  heading?: React.ReactNode;
+  /** Signed links to receipts the owner chose to share (members only). */
+  receiptUrls?: (string | null)[];
+}) {
   return (
     <Card className="p-4">
       {heading ? <div className="mb-2">{heading}</div> : null}
@@ -22,6 +31,17 @@ export function UpdateCard({ update, heading }: { update: PublicUpdate; heading?
               <Image key={p} src={url} alt="Photo shared with the update" width={400} height={400} className="aspect-square w-full rounded-xl object-cover" />
             ) : null;
           })}
+        </div>
+      ) : null}
+      {receiptUrls.some(Boolean) ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {receiptUrls.map((u, i) =>
+            u ? (
+              <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] font-medium hover:border-brand hover:text-brand">
+                <FileText className="h-3.5 w-3.5" aria-hidden /> Receipt {receiptUrls.length > 1 ? i + 1 : ""}
+              </a>
+            ) : null,
+          )}
         </div>
       ) : null}
     </Card>

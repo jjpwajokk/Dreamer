@@ -9,6 +9,7 @@ import type { Institution, Need } from "@/lib/types";
 import { NeedAvatar, StatusPill, VerifiedBadge } from "@/components/need-bits";
 import { Badge, Card, Notice, Progress } from "@/components/ui";
 import { ChecklistForm, DecisionPanel, InstitutionPanel, PayoutPanel } from "../../admin-controls";
+import { BanControl, EscrowPublish, PayoutTarget } from "../../trust-controls";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Review need" };
@@ -32,6 +33,14 @@ export default async function AdminNeedPage({ params }: { params: Promise<{ id: 
     getBanks(),
   ]);
   const institution = inst.data as Institution | null;
+  const { data: personalRow } = need.personal_payee_id
+    ? await admin.from("institutions").select("*").eq("id", need.personal_payee_id).maybeSingle()
+    : { data: null };
+  const personal = personalRow as Institution | null;
+  const payee = need.payout_to === "personal" && personal ? personal : institution;
+  const { data: owner } = need.created_by
+    ? await admin.from("profiles").select("kyc_status, display_name, banned_at").eq("user_id", need.created_by).maybeSingle()
+    : { data: null };
 
   // Signed links to private documents, valid for 10 minutes.
   const docLinks = await Promise.all(
@@ -67,6 +76,9 @@ export default async function AdminNeedPage({ params }: { params: Promise<{ id: 
             <h1 className="font-display text-3xl font-semibold">{need.display_name}</h1>
             <StatusPill status={need.status} />
             <VerifiedBadge verifiedAt={need.verified_at} />
+            {!need.verified_at && ["live", "funded"].includes(need.status) ? <Badge tone="sun">In escrow{need.escrow_deadline ? ` until ${formatDate(need.escrow_deadline)}` : ""}</Badge> : null}
+            {need.org_id ? <Badge>Organisation need</Badge> : null}
+            {owner ? <Badge tone={owner.kyc_status === "verified" ? "brand" : "sun"}>Poster ID: {owner.kyc_status}</Badge> : null}
             {need.is_minor ? <Badge tone="sun">Under 18</Badge> : null}
           </div>
           <p className="text-muted">{need.title} · {CATEGORY_LABEL[need.category]} · {need.city ? `${need.city}, ` : ""}{need.state}</p>
@@ -108,7 +120,7 @@ export default async function AdminNeedPage({ params }: { params: Promise<{ id: 
             </dl>
             <p className="mt-4 rounded-xl bg-sun-soft px-3 py-2 font-display text-lg">&ldquo;{need.my_words}&rdquo;</p>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{need.story}</p>
-            {need.info_request ? <p className="mt-3 text-sm text-[#8a5a10]">Info requested: {need.info_request}</p> : null}
+            {need.info_request ? <p className="mt-3 text-sm text-sun-ink">Info requested: {need.info_request}</p> : null}
             {need.rejection_reason ? <p className="mt-3 text-sm text-danger">Rejected: {need.rejection_reason}</p> : null}
           </Card>
 
@@ -190,13 +202,32 @@ export default async function AdminNeedPage({ params }: { params: Promise<{ id: 
           </Card>
           <Card className="p-5">
             <h2 className="mb-3 font-semibold">Decision</h2>
-            <DecisionPanel needId={need.id} status={need.status} institutionName={institution?.name ?? "the institution"} />
+            <DecisionPanel needId={need.id} status={need.status} institutionName={institution?.name ?? "the institution"} verified={Boolean(need.verified_at)} />
           </Card>
-          {["funded", "expired"].includes(need.status) && payable > 0 && institution ? (
+          {["submitted", "needs_info"].includes(need.status) ? (
+            <Card className="p-5">
+              <h2 className="mb-3 font-semibold">Escrow</h2>
+              <EscrowPublish needId={need.id} />
+            </Card>
+          ) : null}
+          <Card className="p-5">
+            <h2 className="mb-3 font-semibold">Who gets paid</h2>
+            {personal ? (
+              <p className="mb-3 text-sm text-muted">Personal account added: {personal.bank_name ?? personal.bank_code} · {personal.account_number} · {personal.account_name}{personal.account_resolved_at ? " (bank-checked)" : ""}</p>
+            ) : null}
+            <PayoutTarget needId={need.id} current={need.payout_to ?? "institution"} hasPersonal={Boolean(personal)} isOrg={Boolean(need.org_id)} />
+          </Card>
+          {["funded", "expired"].includes(need.status) && payable > 0 && payee && need.verified_at ? (
             <Card className="border-sun p-5">
               <h2 className="mb-3 font-semibold">Payout</h2>
-              {need.status === "expired" ? <p className="mb-3 text-sm text-[#8a5a10]">This need expired partly funded. Only pay out if the institution agrees the partial amount helps; otherwise arrange refunds.</p> : null}
-              <PayoutPanel needId={need.id} amountLabel={formatNaira(payable)} institutionName={institution.name} />
+              {need.status === "expired" ? <p className="mb-3 text-sm text-sun-ink">This need expired partly funded. Only pay out if the institution agrees the partial amount helps; otherwise arrange refunds.</p> : null}
+              <PayoutPanel needId={need.id} amountLabel={formatNaira(payable)} institutionName={payee.name} />
+            </Card>
+          ) : null}
+          {need.created_by && owner && !owner.banned_at ? (
+            <Card className="p-5">
+              <h2 className="mb-2 font-semibold">Fraud</h2>
+              <BanControl userId={need.created_by} name={owner.display_name ?? "This person"} />
             </Card>
           ) : null}
           <Card className="p-5">

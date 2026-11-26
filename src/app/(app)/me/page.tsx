@@ -28,12 +28,12 @@ export default async function MyGivingPage() {
           <p className="text-sm text-white/80">You have given</p>
           <p className="mt-1 font-display text-4xl font-semibold">{formatNaira(impact.totalKobo)}</p>
           <p className="mt-2 text-sm text-white/90">
-            to {impact.needs.length} {impact.needs.length === 1 ? "person" : "people"} · {impact.needs.filter((n) => ["paid_out", "completed"].includes(n.status)).length} paid straight to the bill
+            to {impact.needs.length} {impact.needs.length === 1 ? "dream" : "dreams"} · {impact.needs.filter((n) => ["paid_out", "completed"].includes(n.status)).length} paid straight to the bill
           </p>
         </div>
         {impact.giftCount > 0 ? (
           <div className="p-4">
-            <ShareButton url={shareUrl} text={`${name === "I" ? "I" : name} helped ${impact.needs.length} ${impact.needs.length === 1 ? "person" : "people"} on Dreamer.`} label="Share my impact card" />
+            <ShareButton url={shareUrl} text={`${name === "I" ? "I" : name} backed ${impact.needs.length} ${impact.needs.length === 1 ? "dream" : "dreams"} on Dreamer.`} label="Share my impact card" />
           </div>
         ) : null}
       </Card>
@@ -41,13 +41,13 @@ export default async function MyGivingPage() {
       {impact.needs.length === 0 ? (
         <div className="mt-6">
           <EmptyState title="Your story starts with one person" action={<LinkButton href="/discover">Meet someone</LinkButton>}>
-            When you give, you&apos;ll see here when the money reaches the school, hospital or supplier, and every update from the person you helped. Gave as a guest? Sign in with the same email and your gifts appear here.
+            When you give, you&apos;ll see here when the money reaches the school, hospital or supplier, and every update from the people you backed. Gave as a guest? Sign in with the same email and your gifts appear here.
           </EmptyState>
         </div>
       ) : (
         <>
           <section className="mt-8">
-            <h2 className="font-display text-xl font-semibold">People you helped</h2>
+            <h2 className="font-display text-xl font-semibold">People you backed</h2>
             <ul className="mt-3 space-y-3">
               {impact.needs.map((n) => (
                 <li key={n.id}>
@@ -77,7 +77,7 @@ export default async function MyGivingPage() {
           </section>
 
           <section className="mt-8">
-            <h2 className="flex items-center gap-2 font-display text-xl font-semibold"><HeartHandshake className="h-5 w-5 text-brand" aria-hidden /> Updates from people you helped</h2>
+            <h2 className="flex items-center gap-2 font-display text-xl font-semibold"><HeartHandshake className="h-5 w-5 text-brand" aria-hidden /> Updates from people you backed</h2>
             {impact.updates.length === 0 ? (
               <p className="mt-2 text-sm text-muted">No updates yet. People post one after their bill is paid, and we&apos;ll email you when they do.</p>
             ) : (

@@ -1,7 +1,9 @@
 export const SITE_NAME = "Dreamer";
-export const TAGLINE = "Help a real person with a real, verified need, and watch it change their life.";
+export const TAGLINE = "Verified needs, held in escrow, paid directly to the payee. Back real dreams across Nigeria and watch them come true.";
 
 export const NEED_LIFETIME_DAYS = 30;
+/** Unverified needs may hold gifts for at most this long before every giver is refunded. */
+export const ESCROW_DAYS = 30;
 
 export function siteUrl(): string {
   // Prefer the stable production address: per-deployment URLs (VERCEL_URL)

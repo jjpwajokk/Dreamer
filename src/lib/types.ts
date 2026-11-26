@@ -29,6 +29,12 @@ export type PublicNeed = {
   giver_count: number;
   payout_completed_at: string | null;
   paid_out_kobo: number;
+  escrow_deadline: string | null;
+  is_urgent: boolean;
+  deadline: string | null;
+  org_slug: string | null;
+  org_name: string | null;
+  payout_to: "institution" | "personal";
 };
 
 export type Need = {
@@ -63,6 +69,13 @@ export type Need = {
   paid_out_at: string | null;
   completed_at: string | null;
   expires_at: string | null;
+  org_id: string | null;
+  personal_payee_id: string | null;
+  payout_to: "institution" | "personal";
+  escrow_deadline: string | null;
+  is_urgent: boolean;
+  deadline: string | null;
+  expiry_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -96,6 +109,71 @@ export type Profile = {
   email: string | null;
   state: string | null;
   avatar_url: string | null;
+  legal_name: string | null;
+  date_of_birth: string | null;
+  city: string | null;
+  address: string | null;
+  occupation: string | null;
+  workplace: string | null;
+  id_type: string | null;
+  id_last4: string | null;
+  kyc_status: "none" | "submitted" | "verified" | "rejected";
+  kyc_note: string | null;
+  bio: string | null;
+  avatar_path: string | null;
+  profile_public: boolean;
+  socials: Record<string, string> | null;
+  socials_visibility: "members" | "on_request" | "hidden";
+  banned_at: string | null;
+  ban_reason: string | null;
+};
+
+export type Organisation = {
+  id: string;
+  slug: string;
+  owner_id: string;
+  name: string;
+  org_type: string;
+  tagline: string | null;
+  about: string;
+  impact: string;
+  people_supported: number | null;
+  year_founded: number | null;
+  cac_number: string | null;
+  state: string | null;
+  city: string | null;
+  address: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  website: string | null;
+  socials: Record<string, string> | null;
+  socials_visibility: "members" | "on_request" | "hidden";
+  logo_path: string | null;
+  bank_code: string | null;
+  bank_name: string | null;
+  account_number: string | null;
+  account_name: string | null;
+  account_resolved_at: string | null;
+  status: "draft" | "submitted" | "needs_info" | "verified" | "rejected" | "suspended";
+  review_note: string | null;
+  verified_at: string | null;
+};
+
+export type MediaRow = {
+  id: string;
+  owner_id: string;
+  need_id: string | null;
+  org_id: string | null;
+  update_id: string | null;
+  purpose: "need" | "org" | "progress" | "profile";
+  storage_path: string;
+  caption: string | null;
+  is_sensitive: boolean;
+  visibility: "public" | "on_request";
+  moderation: "pending" | "approved" | "rejected";
+  sort: number;
+  created_at: string;
 };
 
 export type PublicUpdate = {
@@ -104,5 +182,6 @@ export type PublicUpdate = {
   body: string;
   milestone: string;
   photo_paths: string[];
+  receipt_paths: string[];
   published_at: string;
 };

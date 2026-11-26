@@ -16,7 +16,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     const { data: profile } = await createAdminClient().from("profiles").select("user_id, display_name").eq("id", id).maybeSingle();
     if (profile) {
       const impact = await getImpact(profile.user_id);
-      line = `${profile.display_name || "A Dreamer"} helped ${impact.needs.length} ${impact.needs.length === 1 ? "person" : "people"}`;
+      line = `${profile.display_name || "A Dreamer"} backed ${impact.needs.length} ${impact.needs.length === 1 ? "dream" : "dreams"}`;
       sub = `${formatNaira(impact.totalKobo)} given, paid straight to schools and hospitals`;
     }
   }

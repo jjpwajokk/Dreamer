@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getFeed, getRecentUpdates, getSiteStats } from "@/lib/queries";
+import { getSession } from "@/lib/auth";
 import { formatNaira, progressPercent } from "@/lib/money";
 import { CATEGORIES, SECTORS } from "@/lib/sectors";
 import { milestoneLabel } from "@/lib/format";
@@ -27,7 +28,8 @@ export const dynamic = "force-dynamic";
 const compact = new Intl.NumberFormat("en-NG", { notation: "compact", maximumFractionDigits: 1 });
 
 export default async function Home() {
-  const [stats, needs, updates] = await Promise.all([getSiteStats(), getFeed({}, {}), getRecentUpdates(3)]);
+  const session = await getSession().catch(() => null);
+  const [stats, needs, updates] = await Promise.all([getSiteStats(), getFeed({}, { userId: session?.userId ?? null }), getRecentUpdates(3, Boolean(session))]);
   const featured = needs.slice(0, 3);
 
   return (
@@ -46,20 +48,20 @@ export default async function Home() {
               <span className="text-gradient">Lives you can watch change.</span>
             </h1>
             <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-white/70">
-              Dreamer connects you with Nigerians facing a real, checked need: school fees, a hospital bill, rent, the tools to earn a living. You give in a few taps. The money goes straight to the school, hospital or supplier. Then you see what changed.
+              Dreamer connects you with Nigerians working towards something real: finishing school, getting well, a safe home, growing a business. Every need is checked. You give in a few taps, the money goes straight to the school, hospital or supplier, and you get to see what happens next.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/discover" className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-6 text-[15px] font-semibold text-night shadow-[0_10px_30px_-10px_rgba(52,211,153,.6)] transition hover:bg-white/90">
                 Start giving <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link href="/me/needs/new" className="glass inline-flex h-12 items-center gap-2 rounded-xl px-6 text-[15px] font-semibold text-white transition hover:bg-white/10">
-                Ask for help
+                Share your dream
               </Link>
             </div>
             <ul className="mt-10 grid max-w-lg grid-cols-1 gap-3 text-sm text-white/65 sm:grid-cols-3">
-              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-mint" aria-hidden /> Every need verified</li>
-              <li className="flex items-center gap-2"><Landmark className="h-4 w-4 text-mint" aria-hidden /> Paid to institutions</li>
-              <li className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-mint" aria-hidden /> Secured by Paystack</li>
+              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-mint" aria-hidden /> Verified needs</li>
+              <li className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-mint" aria-hidden /> Held in escrow</li>
+              <li className="flex items-center gap-2"><Landmark className="h-4 w-4 text-mint" aria-hidden /> Paid directly to the payee</li>
             </ul>
           </div>
 
@@ -145,7 +147,7 @@ export default async function Home() {
             <p>
               <strong className="text-ink">Dreamer closes that gap.</strong> Each person tells their story in their own words. Our team checks the documents and calls the school, hospital or landlord to confirm the amount before anything goes live. When you give, the money is paid to that institution, never to a personal account. And when it lands, the person posts an update so you can see what your gift did.
             </p>
-            <p>It&apos;s not about the rich rescuing the poor. It&apos;s about dignity, transparency and connection between people who would never otherwise meet.</p>
+            <p>It&apos;s not charity from a distance. It&apos;s people backing people: with dignity, transparency and real connection between neighbours who might never otherwise meet.</p>
           </div>
         </div>
         <div className="mt-14 grid gap-4 md:grid-cols-3">
@@ -181,13 +183,13 @@ export default async function Home() {
                 ],
               },
               {
-                who: "If you need help",
+                who: "If you're working towards something",
                 Icon: HandCoins,
                 steps: [
-                  ["Tell your story", "Post for yourself, your child, or someone you vouch for. First names only, faces optional."],
+                  ["Share your story", "For yourself, your child, someone you vouch for, or the people your organisation supports. First names only; you choose who sees your photos."],
                   ["Upload the bill", "Share the fee invoice, hospital bill or quote, and who we should call to confirm it."],
-                  ["We verify and publish", "Our team confirms the details. Your need goes live with a Verified badge."],
-                  ["Get funded, then share", "We pay the institution. You post a short update to thank the people who helped."],
+                  ["Go live, get verified", "Your need can go live quickly while our team confirms the details. Gifts are held safely until checks pass."],
+                  ["Celebrate progress", "We pay the school, hospital or supplier. You share photos, receipts and milestones with the people backing you."],
                 ],
               },
             ].map((track) => (
@@ -249,9 +251,9 @@ export default async function Home() {
           <h2 className="mt-3 max-w-2xl font-display text-4xl leading-[1.05] sm:text-5xl">Every naira is checked, tracked and accounted for.</h2>
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { Icon: ScanSearch, t: "Documents reviewed", d: "Fee invoices, bills and quotes checked against ID." },
+              { Icon: ScanSearch, t: "People and documents checked", d: "A light ID check for everyone who shares a need, plus invoices, bills and quotes reviewed. Organisations show their CAC registration." },
               { Icon: PhoneCall, t: "Institution called", d: "We confirm the amount with the bursar, billing office or landlord." },
-              { Icon: Banknote, t: "Account confirmed", d: "The receiving bank account is verified before any payout." },
+              { Icon: Banknote, t: "Held until verified", d: "Gifts wait securely with our licensed payment partner. Not verified within 30 days? Every giver is refunded." },
               { Icon: Eye, t: "Full audit trail", d: "Every approval and every naira in and out is logged and reconciled." },
             ].map(({ Icon, t, d }) => (
               <div key={t} className="glass rounded-2xl p-6">
@@ -265,7 +267,7 @@ export default async function Home() {
             <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
               <span className="rounded-lg bg-white/10 px-3 py-1.5">You</span>
               <ArrowRight className="h-4 w-4 text-white/40" aria-hidden />
-              <span className="rounded-lg bg-white/10 px-3 py-1.5">Paystack (secured)</span>
+              <span className="rounded-lg bg-white/10 px-3 py-1.5">Escrow with Paystack until final checks</span>
               <ArrowRight className="h-4 w-4 text-white/40" aria-hidden />
               <span className="rounded-lg bg-mint/20 px-3 py-1.5 text-mint">School · Hospital · Landlord · Supplier</span>
             </div>
@@ -281,7 +283,7 @@ export default async function Home() {
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">{updates.length ? "What changed" : "Meet people"}</p>
-                <h2 className="mt-3 font-display text-4xl leading-[1.05]">{updates.length ? "Updates from people you helped." : "Verified needs, live now."}</h2>
+                <h2 className="mt-3 font-display text-4xl leading-[1.05]">{updates.length ? "Progress worth celebrating." : "Verified needs, live now."}</h2>
               </div>
               <Link href="/discover" className="hidden items-center gap-1.5 text-sm font-semibold text-brand sm:inline-flex">See all <ArrowRight className="h-4 w-4" aria-hidden /></Link>
             </div>

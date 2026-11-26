@@ -13,6 +13,8 @@ export const PAYEE_TYPES = [
   "supplier",
   "training_centre",
   "relief_partner",
+  "personal_account",
+  "organisation",
 ] as const;
 export type PayeeType = (typeof PAYEE_TYPES)[number];
 
@@ -108,6 +110,8 @@ export const PAYEE_LABEL: Record<PayeeType, string> = {
   supplier: "Supplier or vendor",
   training_centre: "Training centre",
   relief_partner: "Relief partner",
+  personal_account: "Personal account",
+  organisation: "Organisation",
 };
 
 /** Used when the payee's name is hidden (under-18s). */
@@ -119,6 +123,8 @@ export const PAYEE_HIDDEN_LABEL: Record<PayeeType, string> = {
   supplier: "the supplier",
   training_centre: "the training centre",
   relief_partner: "the relief partner",
+  personal_account: "their verified account",
+  organisation: "the organisation",
 };
 
 export function isCategory(v: unknown): v is Category {
@@ -127,4 +133,20 @@ export function isCategory(v: unknown): v is Category {
 
 export function sector(c: string | null | undefined): Sector {
   return isCategory(c) ? SECTORS[c] : SECTORS.education;
+}
+
+export const ORG_TYPES = ["orphanage", "charity_home", "ngo", "foundation", "school", "faith_based", "community", "social_enterprise"] as const;
+export type OrgType = (typeof ORG_TYPES)[number];
+export const ORG_TYPE_LABEL: Record<OrgType, string> = {
+  orphanage: "Children's home",
+  charity_home: "Care home",
+  ngo: "Non-profit (NGO)",
+  foundation: "Foundation",
+  school: "School",
+  faith_based: "Faith-based organisation",
+  community: "Community group",
+  social_enterprise: "Social enterprise",
+};
+export function orgTypeLabel(t: string): string {
+  return (ORG_TYPE_LABEL as Record<string, string>)[t] ?? "Organisation";
 }

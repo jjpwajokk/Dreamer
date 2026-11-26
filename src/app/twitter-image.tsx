@@ -29,11 +29,11 @@ export default function Image() {
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 68, fontWeight: 700, lineHeight: 1.08, letterSpacing: -2, maxWidth: 980 }}>Back real, verified dreams.</div>
           <div style={{ fontSize: 34, color: "#a7f3d0", maxWidth: 980, lineHeight: 1.3 }}>
-            School fees, health, rent, small businesses and more, across Nigeria. Every need checked. Every naira traceable.
+            School fees, health, rent, small businesses and more, across Nigeria. Gifts are held in escrow until final checks, then paid directly to the payee.
           </div>
         </div>
         <div style={{ display: "flex", gap: 16, fontSize: 26, color: "#d1fae5" }}>
-          {["Verified needs", "Paid straight to the payee", "Progress updates"].map((t) => (
+          {["Verified needs", "Held in escrow", "Paid directly to the payee"].map((t) => (
             <div key={t} style={{ display: "flex", border: "2px solid #10b98155", borderRadius: 999, padding: "10px 22px" }}>{t}</div>
           ))}
         </div>

@@ -54,7 +54,7 @@ export default async function WelcomePage() {
     { href: "/me", title: "My impact", text: "Every gift you have made, where the money went, and the updates you received.", Icon: HeartHandshake },
   ];
   const asker: Tile[] = [
-    { href: "/me/needs/new", title: "Post a need", text: "For yourself or someone you know. Takes about 10 minutes. Have the invoice ready.", Icon: PlusCircle },
+    { href: "/me/needs/new", title: "Share a need", text: "For yourself or someone you know. Takes about 10 minutes. Have the invoice ready.", Icon: PlusCircle },
     { href: "/me/needs", title: "My needs", text: "Track verification, see what was raised, and post your thank-you update.", Icon: ListChecks },
     { href: "/me/account", title: "Account", text: "Your name, email and notification settings.", Icon: Settings },
   ];
@@ -91,7 +91,7 @@ export default async function WelcomePage() {
               <Compass className="h-4 w-4" aria-hidden /> Start giving
             </Link>
             <Link href="/me/needs/new" className="glass inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-white hover:bg-white/10">
-              <PlusCircle className="h-4 w-4" aria-hidden /> Ask for help
+              <PlusCircle className="h-4 w-4" aria-hidden /> Share a need
             </Link>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default async function WelcomePage() {
           {steps.map((s) => (
             <li key={s.n}>
               <Card className="h-full p-5">
-                <span className="tabular grid h-8 w-8 place-items-center rounded-full bg-ink text-sm font-semibold text-white">{s.n}</span>
+                <span className="tabular grid h-8 w-8 place-items-center rounded-full bg-ink text-sm font-semibold text-bg">{s.n}</span>
                 <p className="mt-3 font-semibold">{s.title}</p>
                 <p className="mt-1 text-sm text-muted">{s.text}</p>
               </Card>
@@ -120,7 +120,7 @@ export default async function WelcomePage() {
 
       <section>
         <h2 className="font-display text-xl">If you need help</h2>
-        <p className="mb-4 mt-1 text-sm text-muted">Find these under <strong className="text-ink">Ask for help</strong> in the menu. You&apos;ll need the invoice or quote, and the payee&apos;s bank details from it.</p>
+        <p className="mb-4 mt-1 text-sm text-muted">Find these under <strong className="text-ink">Get support</strong> in the menu. You&apos;ll need the invoice or quote, and the payee&apos;s bank details from it.</p>
         <TileGrid tiles={asker} />
       </section>
 

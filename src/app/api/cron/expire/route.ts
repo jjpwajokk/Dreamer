@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyNeedExpired, remindForUpdate } from "@/lib/notify";
+import { notifyNeedExpired, notifyEscrowRefund, remindForUpdate } from "@/lib/notify";
+import { paystackConfigured } from "@/lib/config";
+import { refundTransaction } from "@/lib/paystack";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -9,6 +11,8 @@ const DAY = 86_400_000;
 
 /**
  * Daily (vercel.json):
+ * 0. escrow: closes needs still unverified after 30 days and refunds every gift
+ *    (through Paystack when connected; otherwise they wait in /admin/expired),
  * 1. marks live needs past their 30 days as expired,
  * 2. asks givers of newly expired needs to choose a refund or a redirect,
  * 3. reminds people who were helped to post an update at 2 weeks and 3 months.
@@ -19,6 +23,39 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const admin = createAdminClient();
+
+  // Escrow first, so an unverified need is closed as "unverified" (refund only)
+  // rather than "time" (where givers could choose to redirect).
+  const { data: closedUnverified, error: escrowError } = await admin.rpc("close_unverified_needs");
+  if (escrowError) return NextResponse.json({ error: escrowError.message }, { status: 500 });
+  let refunded = 0;
+  const { data: owed } = await admin
+    .from("contributions")
+    .select("id, paystack_reference, need:needs!inner(id, status, expiry_reason)")
+    .eq("status", "success")
+    .eq("expiry_choice", "refund")
+    .eq("need.status", "expired")
+    .in("need.expiry_reason", ["unverified", "removed"])
+    .limit(40);
+  for (const c of owed ?? []) {
+    let note = "";
+    if (paystackConfigured() && c.paystack_reference) {
+      try {
+        await refundTransaction(c.paystack_reference as string);
+        note = "paystack_refund_auto";
+      } catch {
+        continue; // left for an admin in /admin/expired
+      }
+    } else {
+      continue;
+    }
+    const { data: r } = await admin.rpc("record_refund", { p_contribution_id: c.id, p_actor: null, p_note: note });
+    if ((r as { result?: string } | null)?.result === "ok") {
+      refunded++;
+      await notifyEscrowRefund(c.id as string);
+    }
+  }
+
   const { data: expired, error } = await admin.rpc("expire_needs");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -65,5 +102,5 @@ export async function GET(request: NextRequest) {
       .eq("id", n.id);
   }
 
-  return NextResponse.json({ expired, expiryNotices: toNotify?.length ?? 0, reminded });
+  return NextResponse.json({ closedUnverified, refunded, expired, expiryNotices: toNotify?.length ?? 0, reminded });
 }

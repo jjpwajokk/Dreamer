@@ -8,7 +8,7 @@ type Size = "sm" | "md" | "lg";
 const variants: Record<Variant, string> = {
   primary: "bg-brand text-white shadow-[0_1px_0_rgba(255,255,255,.15)_inset,0_8px_20px_-10px_rgba(10,122,90,.7)] hover:bg-brand-dark",
   secondary: "bg-surface text-ink border border-line shadow-sm hover:border-ink/20 hover:bg-bg",
-  ghost: "text-ink hover:bg-black/5",
+  ghost: "text-ink hover:bg-tint/5",
   danger: "bg-danger text-white hover:opacity-90",
   sun: "bg-sun text-night hover:brightness-95",
 };
@@ -91,9 +91,9 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
 
 export function Badge({ className, tone = "neutral", ...props }: ComponentProps<"span"> & { tone?: "neutral" | "brand" | "sun" | "danger" }) {
   const tones = {
-    neutral: "bg-black/5 text-ink",
+    neutral: "bg-tint/5 text-ink",
     brand: "bg-brand-soft text-brand",
-    sun: "bg-sun-soft text-[#8a5a10]",
+    sun: "bg-sun-soft text-sun-ink",
     danger: "bg-danger-soft text-danger",
   };
   return (
@@ -107,7 +107,7 @@ export function Badge({ className, tone = "neutral", ...props }: ComponentProps<
 export function Progress({ percent, className }: { percent: number; className?: string }) {
   return (
     <div
-      className={cn("h-2 w-full overflow-hidden rounded-full bg-black/[.07]", className)}
+      className={cn("h-2 w-full overflow-hidden rounded-full bg-tint/[.07]", className)}
       role="progressbar"
       aria-valuenow={percent}
       aria-valuemin={0}
@@ -121,7 +121,7 @@ export function Progress({ percent, className }: { percent: number; className?: 
 export function Notice({ tone = "brand", children }: { tone?: "brand" | "sun" | "danger"; children: ReactNode }) {
   const tones = {
     brand: "bg-brand-soft text-brand border-brand/20",
-    sun: "bg-sun-soft text-[#6e470b] border-sun/30",
+    sun: "bg-sun-soft text-sun-ink border-sun/30",
     danger: "bg-danger-soft text-danger border-danger/20",
   };
   return <div className={cn("rounded-xl border px-4 py-3 text-sm", tones[tone])}>{children}</div>;
@@ -164,9 +164,9 @@ export function Stat({
   tone?: "neutral" | "brand" | "sun" | "danger";
 }) {
   const tones = {
-    neutral: "bg-black/[.04] text-ink",
+    neutral: "bg-tint/[.04] text-ink",
     brand: "bg-brand-soft text-brand",
-    sun: "bg-sun-soft text-[#8a5a10]",
+    sun: "bg-sun-soft text-sun-ink",
     danger: "bg-danger-soft text-danger",
   };
   return (

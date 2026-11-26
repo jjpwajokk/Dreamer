@@ -5,7 +5,7 @@ import { z } from "zod";
 import { assertAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { NEED_LIFETIME_DAYS, paystackConfigured, siteUrl } from "@/lib/config";
+import { ESCROW_DAYS, NEED_LIFETIME_DAYS, paystackConfigured, siteUrl } from "@/lib/config";
 import { createTransferRecipient, initiateTransfer, newReference, refundTransaction, resolveAccount } from "@/lib/paystack";
 import { sendEmail } from "@/lib/email";
 import { formatNaira } from "@/lib/money";
@@ -49,37 +49,96 @@ export async function approveNeed(needId: string, verificationNote: string): Pro
   const admin = createAdminClient();
   const { data: need } = await admin.from("needs").select("*").eq("id", needId).maybeSingle();
   if (!need) return { error: "Need not found." };
-  if (!["submitted", "needs_info"].includes(need.status)) return { error: `Can't approve a need that is ${need.status}.` };
-  if (!need.institution_id) return { error: "The need has no institution." };
+  const escrowed = ["live", "funded"].includes(need.status) && !need.verified_at;
+  if (!["submitted", "needs_info"].includes(need.status) && !escrowed) return { error: `Can't approve a need that is ${need.status}.` };
+  if (!need.institution_id) return { error: "The need has no payee yet." };
   const { data: checks } = await admin.from("verification_checks").select("check, passed").eq("need_id", needId);
   const missing = REQUIRED_CHECKS.filter((c) => !(checks ?? []).some((x) => x.check === c && x.passed));
   if (missing.length) return { error: `Tick and save these checks first: ${missing.join(", ")}.` };
 
   const now = new Date();
-  const after = {
-    status: "live",
-    verified_at: now.toISOString(),
-    verified_by: session.userId,
-    verification_note: note.slice(0, 300),
-    published_at: now.toISOString(),
-    expires_at: new Date(now.getTime() + NEED_LIFETIME_DAYS * 86_400_000).toISOString(),
-    info_request: null,
-  };
+  const after = escrowed
+    ? { verified_at: now.toISOString(), verified_by: session.userId, verification_note: note.slice(0, 300), info_request: null }
+    : {
+        status: "live",
+        verified_at: now.toISOString(),
+        verified_by: session.userId,
+        verification_note: note.slice(0, 300),
+        published_at: now.toISOString(),
+        expires_at: new Date(now.getTime() + NEED_LIFETIME_DAYS * 86_400_000).toISOString(),
+        info_request: null,
+      };
   const { error } = await admin.from("needs").update(after).eq("id", needId);
   if (error) return { error: error.message };
   await admin.from("institutions").update({ verified_at: now.toISOString(), verified_by: session.userId }).eq("id", need.institution_id).is("verified_at", null);
-  await logAudit({ actorId: session.userId, action: "need.approved", entity: "need", entityId: needId, before: { status: need.status }, after });
+  if (need.payout_to === "personal" && need.personal_payee_id) {
+    await admin.from("institutions").update({ verified_at: now.toISOString(), verified_by: session.userId }).eq("id", need.personal_payee_id).is("verified_at", null);
+  }
+  await logAudit({ actorId: session.userId, action: escrowed ? "need.verified_in_escrow" : "need.approved", entity: "need", entityId: needId, before: { status: need.status }, after });
 
   const to = await beneficiaryEmail(needId);
   if (to) {
     await sendEmail({
       to,
-      subject: `${need.display_name}'s need is live and verified`,
-      text: `Good news! ${need.display_name}'s need has been verified and is now live on Dreamer.\n\nShare this link on WhatsApp to reach more givers:\n${siteUrl()}/n/${need.slug}`,
+      subject: `${need.display_name}'s need is verified`,
+      text: `Good news! ${need.display_name}'s need has been verified${escrowed ? ". Gifts can now be paid out" : " and is now live on Dreamer"}.\n\nShare this link on WhatsApp to reach more givers:\n${siteUrl()}/n/${need.slug}`,
     });
   }
   refresh(needId);
-  return { ok: true, message: "Approved. The need is live." };
+  return { ok: true, message: escrowed ? "Verified. Gifts can now be paid out." : "Approved. The need is live." };
+}
+
+/**
+ * Escrow mode: put a need live before checks finish. Gifts are held in the
+ * Paystack balance and can't be paid out until the need is verified; if it
+ * isn't verified within 30 days, the daily job closes it and refunds givers.
+ */
+export async function publishInEscrow(needId: string): Promise<AdminResult> {
+  const session = await assertAdmin();
+  const admin = createAdminClient();
+  const { data: need } = await admin.from("needs").select("*").eq("id", needId).maybeSingle();
+  if (!need) return { error: "Need not found." };
+  if (!["submitted", "needs_info"].includes(need.status)) return { error: `Can't publish a need that is ${need.status}.` };
+  if (!need.institution_id) return { error: "The need has no payee yet." };
+  const now = new Date();
+  const after = {
+    status: "live",
+    published_at: now.toISOString(),
+    expires_at: new Date(now.getTime() + NEED_LIFETIME_DAYS * 86_400_000).toISOString(),
+    escrow_deadline: new Date(now.getTime() + ESCROW_DAYS * 86_400_000).toISOString(),
+    info_request: null,
+  };
+  const { error } = await admin.from("needs").update(after).eq("id", needId);
+  if (error) return { error: error.message };
+  await logAudit({ actorId: session.userId, action: "need.published_in_escrow", entity: "need", entityId: needId, before: { status: need.status }, after });
+  const to = await beneficiaryEmail(needId);
+  if (to) {
+    await sendEmail({
+      to,
+      subject: `${need.display_name}'s need is live`,
+      text: `${need.display_name}'s need is now live on Dreamer while we finish our checks. Gifts are held safely and paid out once checks pass.\n\nShare your link: ${siteUrl()}/n/${need.slug}`,
+    });
+  }
+  refresh(needId);
+  return { ok: true, message: "Live in escrow. Payouts stay locked until you verify it." };
+}
+
+/** Choose where a need is paid: the institution (default) or the person's own verified account. */
+export async function setPayoutTarget(needId: string, target: "institution" | "personal", reason: string): Promise<AdminResult> {
+  const session = await assertAdmin();
+  const admin = createAdminClient();
+  const { data: need } = await admin.from("needs").select("payout_to, personal_payee_id, org_id").eq("id", needId).maybeSingle();
+  if (!need) return { error: "Need not found." };
+  if (target === "personal") {
+    if (need.org_id) return { error: "Organisation needs are paid only to the organisation's account." };
+    if (!need.personal_payee_id) return { error: "No personal account was added for this need." };
+    if (reason.trim().length < 5) return { error: "Note why the personal account is being used (e.g. the clinic only takes cash)." };
+  }
+  const { error } = await admin.from("needs").update({ payout_to: target }).eq("id", needId);
+  if (error) return { error: error.message };
+  await logAudit({ actorId: session.userId, action: "need.payout_target", entity: "need", entityId: needId, before: { payout_to: need.payout_to }, after: { payout_to: target, reason } });
+  refresh(needId);
+  return { ok: true, message: target === "personal" ? "Will pay the person's verified account." : "Will pay the institution." };
 }
 
 export async function requestInfo(needId: string, message: string): Promise<AdminResult> {
@@ -182,10 +241,17 @@ function normalize(s: string) {
   return s.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
+/** The payee for a need: its institution, or the person's verified account when an admin chose that. */
+function payeeId(need: Record<string, unknown>): string | null {
+  return ((need.payout_to === "personal" ? need.personal_payee_id : need.institution_id) as string | null) ?? null;
+}
+
 async function payableKobo(needId: string): Promise<{ need: Record<string, unknown> | null; amount: number; error?: string }> {
   const admin = createAdminClient();
   const { data: need } = await admin.from("needs").select("*").eq("id", needId).maybeSingle();
   if (!need) return { need: null, amount: 0, error: "Need not found." };
+  if (!need.verified_at) return { need, amount: 0, error: "This need is still in escrow. Verify it before paying out." };
+  if (!payeeId(need)) return { need, amount: 0, error: "No payee set." };
   if (!["funded", "expired"].includes(need.status)) return { need, amount: 0, error: "Payouts are for fully funded needs (or expired needs you choose to pay out)." };
   const { data: payouts } = await admin.from("payouts").select("amount_kobo, status").eq("need_id", needId);
   if ((payouts ?? []).some((p) => p.status === "pending")) return { need, amount: 0, error: "A payout is already in progress for this need." };
@@ -201,9 +267,9 @@ export async function startPaystackPayout(needId: string): Promise<AdminResult> 
   const { need, amount, error } = await payableKobo(needId);
   if (error || !need) return { error };
   const admin = createAdminClient();
-  const { data: inst } = await admin.from("institutions").select("*").eq("id", need.institution_id as string).maybeSingle();
-  if (!inst) return { error: "Institution not found." };
-  if (!inst.verified_at) return { error: "Verify the institution first." };
+  const { data: inst } = await admin.from("institutions").select("*").eq("id", payeeId(need)!).maybeSingle();
+  if (!inst) return { error: "Payee not found." };
+  if (!inst.verified_at) return { error: "Verify the payee first." };
   if (!inst.account_resolved_at) return { error: "Confirm the account with \"Check account with bank\" first." };
 
   let recipient = inst.paystack_recipient_code as string | null;
@@ -256,7 +322,7 @@ export async function recordManualPayout(needId: string, bankReference: string):
   const reference = newReference("po");
   const { error: insertError } = await admin.from("payouts").insert({
     need_id: needId,
-    institution_id: need.institution_id,
+    institution_id: payeeId(need),
     amount_kobo: amount,
     method: "manual",
     manual_reference: bankReference.trim().slice(0, 120),
@@ -334,7 +400,7 @@ export async function redirectGift(contributionId: string, toNeedId: string): Pr
   if (c && to) {
     await sendEmail({
       to: c.giver_email as string,
-      subject: `Your gift now helps ${to.display_name}`,
+      subject: `Your gift is now backing ${to.display_name}`,
       text: `As you asked, we moved your ${formatNaira(c.amount_kobo as number)} gift to ${to.display_name}, another verified person with a similar need.\n\nMeet ${to.display_name}: ${siteUrl()}/n/${to.slug}`,
     });
   }
