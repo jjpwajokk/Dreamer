@@ -17,7 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getFeed, getRecentUpdates, getSiteStats } from "@/lib/queries";
-import { FEE_CAP_KOBO, FEE_PERCENT, formatNaira, platformFeeKobo, progressPercent } from "@/lib/money";
+import { formatNaira, progressPercent } from "@/lib/money";
 import { CATEGORIES, SECTORS } from "@/lib/sectors";
 import { milestoneLabel } from "@/lib/format";
 import { CategoryBadge, NeedAvatar } from "@/components/need-bits";
@@ -120,7 +120,7 @@ export default async function Home() {
                 { label: "Sectors, from school fees to rent", value: String(CATEGORIES.length) },
                 { label: "Of every need checked by a person", value: "100%" },
                 { label: "Paid to personal accounts. Ever.", value: "₦0" },
-                { label: "Platform fee, capped at ₦5,000", value: `${FEE_PERCENT}%` },
+                { label: "Refunded if a need can't be verified", value: "100%" },
               ]
           ).map((s, i) => (
             <div key={s.label} className={`p-5 sm:p-7 ${i % 2 ? "border-l" : ""} ${i > 1 ? "border-t md:border-t-0" : ""} ${i === 2 ? "md:border-l" : ""} border-line`}>
@@ -269,46 +269,7 @@ export default async function Home() {
               <ArrowRight className="h-4 w-4 text-white/40" aria-hidden />
               <span className="rounded-lg bg-mint/20 px-3 py-1.5 text-mint">School · Hospital · Landlord · Supplier</span>
             </div>
-            <p className="text-sm text-white/60">Never to a personal account.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Fees */}
-      <section id="fees" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20 sm:px-6 md:py-28">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">Transparent fees</p>
-            <h2 className="mt-3 font-display text-4xl leading-[1.05] sm:text-5xl">{FEE_PERCENT}% platform fee, capped at {formatNaira(FEE_CAP_KOBO)}.</h2>
-            <p className="mt-5 text-[17px] leading-relaxed text-muted">
-              The fee pays for verification calls, payment processing, payouts and keeping Dreamer running. You choose how it works: add it on top so the person receives your full gift, or take it from your gift. Either way, you see exactly what the person receives before you pay.
-            </p>
-          </div>
-          <div className="rounded-3xl border border-line bg-surface p-2 shadow-xl shadow-black/[.04]">
-            <table className="w-full text-left text-[15px]">
-              <thead className="text-xs uppercase tracking-wider text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">You give</th>
-                  <th className="px-4 py-3 font-semibold">Fee</th>
-                  <th className="px-4 py-3 font-semibold">Fee on top: you pay</th>
-                  <th className="hidden px-4 py-3 font-semibold sm:table-cell">Fee taken: they get</th>
-                </tr>
-              </thead>
-              <tbody className="tabular">
-                {[2_000, 10_000, 50_000, 200_000].map((n) => {
-                  const k = n * 100;
-                  const fee = platformFeeKobo(k);
-                  return (
-                    <tr key={n} className="border-t border-line">
-                      <td className="px-4 py-3 font-semibold">{formatNaira(k)}</td>
-                      <td className="px-4 py-3 text-muted">{formatNaira(fee)}{fee === FEE_CAP_KOBO ? " (cap)" : ""}</td>
-                      <td className="px-4 py-3">{formatNaira(k + fee)}</td>
-                      <td className="hidden px-4 py-3 sm:table-cell">{formatNaira(k - fee)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <p className="text-sm text-white/60">Released only after every check passes.</p>
           </div>
         </div>
       </section>
@@ -364,9 +325,8 @@ export default async function Home() {
         <h2 className="text-center font-display text-4xl leading-[1.05]">Questions, answered.</h2>
         <div className="mt-10 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
           {[
-            ["How do I know a need is genuine?", "Before a need goes live, our team reviews the documents and calls the institution to confirm the amount and the bank account. The need page shows what we checked and when. If anything looks wrong, anyone can report it privately."],
-            ["Does the money go to the person?", "No. Gifts are paid directly to the school, hospital, landlord, supplier or training centre named on the need. This protects givers and the people being helped."],
-            ["What does the fee cover?", `A ${FEE_PERCENT}% fee, never more than ${formatNaira(FEE_CAP_KOBO)} per gift, covers verification, payment processing, payouts and running Dreamer. You choose whether to add it on top or take it from your gift.`],
+            ["How do I know a need is genuine?", "Our team reviews the documents, checks the person's ID and calls the school, hospital or business to confirm the amount and the bank account. Every gift is held securely by our licensed payment partner until those checks pass, and if a need can't be verified within 30 days, every giver is refunded in full."],
+            ["Where does the money go?", "Straight to the school, hospital, landlord, supplier or training centre named on the need, once it's verified. Organisations are paid only into their official, registered account. This protects givers and the people being supported."],
             ["What if a need isn't fully funded?", "Needs stay open for 30 days. If one isn't fully funded, we ask each giver whether they'd like a refund or to move their gift to another verified need. Nothing moves without your consent."],
             ["Can I give without an account?", "Yes. Use your email for the receipt. If you create an account later with the same email, your gifts and updates appear in your impact feed."],
             ["Is my information safe?", "Only first names are public. Documents, phone numbers and bank details are never shown. For anyone under 18, the school name is hidden too."],

@@ -26,11 +26,11 @@ test("gift rules: minimum ₦1,000, capped at what is still needed", () => {
   assert.equal(checkGift(100_050, 10_000_000).ok, false, "whole naira only");
 });
 
-test("platform fee is 5%, whole naira, capped at ₦5,000", () => {
+test("platform fee is a flat 5%, whole naira, no cap", () => {
   assert.equal(platformFeeKobo(1_000_000), 50_000);
   assert.equal(platformFeeKobo(123_400), 6_100);
   assert.equal(platformFeeKobo(100_000_00), 500_000, "₦100,000 gift pays ₦5,000");
-  assert.equal(platformFeeKobo(1_000_000_00), 500_000, "cap holds for large gifts");
+  assert.equal(platformFeeKobo(1_000_000_00), 5_000_000, "no cap: ₦1,000,000 pays ₦50,000");
   assert.equal(platformFeeKobo(0), 0);
 });
 
@@ -41,8 +41,8 @@ test("fee on top: the person receives the full gift", () => {
 test("fee deducted: the giver pays the gift, the person receives less the fee", () => {
   assert.deepEqual(giftBreakdown(1_000_000, 50_000_000, "deducted"), { chargeKobo: 1_000_000, netKobo: 950_000, feeKobo: 50_000, mode: "deducted", finishes: false });
   const big = giftBreakdown(20_000_000, 50_000_000, "deducted");
-  assert.equal(big.feeKobo, 500_000);
-  assert.equal(big.netKobo, 19_500_000);
+  assert.equal(big.feeKobo, 1_000_000);
+  assert.equal(big.netKobo, 19_000_000);
 });
 
 test("a gift larger than what is left finishes the need exactly", () => {
@@ -60,7 +60,7 @@ test("charge always equals credited amount plus fee", () => {
     for (const mode of ["on_top", "deducted"] as const) {
       const b = giftBreakdown(g, 60_000_000, mode);
       assert.equal(b.chargeKobo, b.netKobo + b.feeKobo);
-      assert.ok(b.feeKobo <= 500_000);
+      assert.ok(b.feeKobo <= Math.ceil(b.netKobo / 19) + 100);
     }
   }
 });

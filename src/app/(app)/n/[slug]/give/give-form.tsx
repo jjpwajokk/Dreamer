@@ -5,7 +5,6 @@ import { ArrowRight, Check, Lock } from "lucide-react";
 import { Button, Field, Input, Notice } from "@/components/ui";
 import { cn } from "@/lib/format";
 import {
-  FEE_CAP_KOBO,
   FEE_PERCENT,
   MIN_GIFT_KOBO,
   QUICK_PICKS_KOBO,
@@ -94,7 +93,7 @@ export function GiveForm({
       <fieldset>
         <legend className="mb-1 text-[15px] font-semibold">Who covers the {FEE_PERCENT}% platform fee?</legend>
         <p className="mb-3 text-xs text-muted">
-          Capped at {formatNaira(FEE_CAP_KOBO)}. It pays for verification, payment processing and payouts.
+          It pays for verifying every need, secure payments and payouts.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {(
@@ -141,7 +140,7 @@ export function GiveForm({
       <div className="overflow-hidden rounded-2xl border border-line bg-bg">
         <div className="tabular space-y-2 p-4 text-sm">
           <div className="flex justify-between"><span className="text-muted">You pay</span><span className="font-semibold">{formatNaira(plan?.chargeKobo ?? 0)}</span></div>
-          <div className="flex justify-between"><span className="text-muted">Platform fee ({FEE_PERCENT}%{plan?.feeKobo === FEE_CAP_KOBO ? ", capped" : ""})</span><span>{formatNaira(plan?.feeKobo ?? 0)}</span></div>
+          <div className="flex justify-between"><span className="text-muted">Platform fee ({FEE_PERCENT}%)</span><span>{formatNaira(plan?.feeKobo ?? 0)}</span></div>
         </div>
         <div className="tabular flex items-center justify-between gap-3 border-t border-line bg-brand-soft/60 px-4 py-3">
           <span className="text-sm font-medium text-brand">

@@ -42,7 +42,7 @@ export async function notifyGiftReceived(reference: string, funded: boolean) {
       `Hi${c.giver_name ? ` ${c.giver_name}` : ""},`,
       ``,
       `Your gift of ${formatNaira(c.amount_kobo)} to ${need.display_name} has been received.`,
-      c.fee_kobo ? `Platform fee: ${formatNaira(c.fee_kobo)} (5%, capped at ₦5,000). It pays for verification, payment processing and payouts.` : ``,
+      c.fee_kobo ? `Platform fee: ${formatNaira(c.fee_kobo)} (5%). It pays for verification, payment processing and payouts.` : ``,
       `Reference: ${reference}`,
       ``,
       `The money will be paid directly to ${need.institution_label ?? "the institution"}, never to a personal account. We'll email you when it's paid, and when ${need.display_name} posts an update.`,

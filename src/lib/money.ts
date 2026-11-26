@@ -5,9 +5,8 @@ export const MIN_GIFT_KOBO = 1_000 * KOBO_PER_NAIRA;
 export const MIN_NEED_KOBO = 1_000 * KOBO_PER_NAIRA;
 export const QUICK_PICKS_KOBO = [2_000, 5_000, 10_000, 20_000].map((n) => n * KOBO_PER_NAIRA);
 
-/** Platform fee: 5% of the gift, capped at ₦5,000. Covers verification, payment and payout costs. */
+/** Platform fee: a flat 5% of the gift, no cap. Covers verification, payment and payout costs (larger gifts need more checks). */
 export const FEE_PERCENT = 5;
-export const FEE_CAP_KOBO = 5_000 * KOBO_PER_NAIRA;
 export type FeeMode = "on_top" | "deducted";
 
 const nairaFormatter = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 });
@@ -37,11 +36,11 @@ export function progressPercent(amountKobo: number, raisedKobo: number): number 
   return Math.min(100, Math.floor((raisedKobo / amountKobo) * 100));
 }
 
-/** The platform fee on an amount: 5%, rounded down to whole naira, at most ₦5,000. */
+/** The platform fee on an amount: 5%, rounded down to whole naira. */
 export function platformFeeKobo(baseKobo: number): number {
   if (!Number.isSafeInteger(baseKobo) || baseKobo <= 0) return 0;
   const raw = Math.floor((baseKobo * FEE_PERCENT) / 100);
-  return Math.min(raw - (raw % KOBO_PER_NAIRA), FEE_CAP_KOBO);
+  return raw - (raw % KOBO_PER_NAIRA);
 }
 
 export type GiftBreakdown = {
@@ -103,3 +102,6 @@ export function checkGift(giftKobo: number, remaining: number): GiftCheck {
   if (giftKobo % KOBO_PER_NAIRA !== 0) return { ok: false, error: "Please give a whole naira amount." };
   return { ok: true, amountKobo: giftKobo };
 }
+
+/** Gifts above this need a signed-in, ID-verified giver (anti-money-laundering). Smaller gifts stay open to guests. */
+export const KYC_GIFT_THRESHOLD_KOBO = 200_000_00;

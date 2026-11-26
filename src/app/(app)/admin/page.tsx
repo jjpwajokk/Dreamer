@@ -79,7 +79,7 @@ export default async function AdminHome() {
           <Stat label="Live needs" value={live} icon={<HandCoins className="h-4 w-4" aria-hidden />} tone="brand" />
           <Stat label="Needs paid out" value={completedOrPaid} icon={<Banknote className="h-4 w-4" aria-hidden />} />
           <Stat label="Raised for needs" value={formatNaira(raised)} icon={<Coins className="h-4 w-4" aria-hidden />} tone="brand" />
-          <Stat label="Platform fees" value={formatNaira(fees)} hint="5%, capped at ₦5,000 per gift" icon={<Coins className="h-4 w-4" aria-hidden />} tone="sun" />
+          <Stat label="Platform fees" value={formatNaira(fees)} hint="5% of each gift" icon={<Coins className="h-4 w-4" aria-hidden />} tone="sun" />
           <Stat label="Givers" value={uniqueGivers} icon={<Users className="h-4 w-4" aria-hidden />} />
         </div>
       </section>

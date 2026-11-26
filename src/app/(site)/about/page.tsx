@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BadgeCheck, HandHeart, Landmark, MessageCircleHeart, PenLine, ShieldCheck } from "lucide-react";
 import { LinkButton } from "@/components/ui";
-import { FEE_CAP_KOBO, FEE_PERCENT, formatNaira } from "@/lib/money";
+import { FEE_PERCENT, formatNaira } from "@/lib/money";
 import { CATEGORIES, SECTORS } from "@/lib/sectors";
 
 export const metadata: Metadata = { title: "How it works", description: "How Dreamer verifies needs, pays institutions directly, and keeps givers connected to the people they help." };
@@ -75,7 +75,7 @@ export default function AboutPage() {
           <div>
             <h2 className="font-display text-3xl">Fees, plainly</h2>
             <p className="mt-4 text-muted">
-              Dreamer charges a {FEE_PERCENT}% platform fee on each gift, capped at {formatNaira(FEE_CAP_KOBO)}. It pays for verifying every need,
+              Dreamer charges a {FEE_PERCENT}% platform fee on each gift. It pays for verifying every need,
               payment processing, and paying institutions. At checkout you choose:
             </p>
             <ul className="mt-4 space-y-2 text-sm">
