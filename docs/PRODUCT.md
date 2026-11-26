@@ -89,7 +89,7 @@ Full-screen cards: photo or initials, first name + state, category, amount, prog
 Feed loads under 2 s on mid-range Android; works without swipe gestures
 4
 Contributions
-Give any amount from ₦1,000, quick picks (₦2k, ₦5k, ₦10k, "Finish it"). Paystack checkout (card, bank transfer, USSD). Optional anonymity and an optional tip to the platform. Receipt by email.
+Give any amount from ₦1,000, quick picks (₦2k, ₦5k, ₦10k, "Finish it"). Paystack checkout (card, bank transfer, USSD). Optional anonymity. A 5% platform fee, capped at ₦5,000, which the giver adds on top or takes from the gift; the checkout shows exactly what the person receives. Receipt by email.
 Payment confirmed by webhook, not by the browser redirect; progress updates instantly
 5
 Payout to institution
@@ -223,7 +223,7 @@ How the money moves
 - Paystack calls the webhook again (transfer.success). The need shows "Paid to [institution] on [date]".
 - If a need expires unfunded, givers choose: refund, or move the money to another verified need.
 The platform only ever pays a verified school or hospital; what flows back to the giver is the beneficiary's update.
-Fees. Paystack's local fee is roughly 1.5% + ₦100 per transaction, capped at ₦2,000, and transfers cost a small flat fee (approximate, from memory; confirm on Paystack's pricing page). Recommended model: the beneficiary receives 100% of the goal, and givers are offered an optional tip that covers fees and running costs.
+Fees. Paystack's local fee is roughly 1.5% + ₦100 per transaction, capped at ₦2,000, and transfers cost a small flat fee (approximate, from memory; confirm on Paystack's pricing page). Decided model (26 Nov 2026): a 5% platform fee capped at ₦5,000 per gift covers verification, payment processing and payouts. The giver chooses to add it on top or deduct it from the gift.
 Legal and regulatory checklist (talk to a Nigerian lawyer before taking real money)
 - Register the entity with the CAC. For a giving platform, Incorporated Trustees (a registered non-profit) or a company limited by guarantee usually fits better than a regular company; it also helps with Paystack approval and future foundation partners.
 - SCUML registration (anti-money-laundering registration required for non-profits).

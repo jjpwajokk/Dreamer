@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkGift, formatNaira, parseNairaToKobo, progressPercent, remainingKobo, tipKobo } from "../src/lib/money.ts";
+import { checkGift, formatNaira, parseNairaToKobo, progressPercent, remainingKobo, platformFeeKobo, giftBreakdown } from "../src/lib/money.ts";
 
 test("formats kobo as naira", () => {
   assert.equal(formatNaira(123_450_00), "₦123,450");
@@ -26,10 +26,43 @@ test("gift rules: minimum ₦1,000, capped at what is still needed", () => {
   assert.equal(checkGift(100_050, 10_000_000).ok, false, "whole naira only");
 });
 
-test("tips round down to whole naira and never affect the gift", () => {
-  assert.equal(tipKobo(1_000_000, 5), 50_000);
-  assert.equal(tipKobo(123_400, 5), 6_100);
-  assert.equal(tipKobo(1_000_000, 0), 0);
+test("platform fee is 5%, whole naira, capped at ₦5,000", () => {
+  assert.equal(platformFeeKobo(1_000_000), 50_000);
+  assert.equal(platformFeeKobo(123_400), 6_100);
+  assert.equal(platformFeeKobo(100_000_00), 500_000, "₦100,000 gift pays ₦5,000");
+  assert.equal(platformFeeKobo(1_000_000_00), 500_000, "cap holds for large gifts");
+  assert.equal(platformFeeKobo(0), 0);
+});
+
+test("fee on top: the person receives the full gift", () => {
+  assert.deepEqual(giftBreakdown(1_000_000, 50_000_000, "on_top"), { chargeKobo: 1_050_000, netKobo: 1_000_000, feeKobo: 50_000, mode: "on_top", finishes: false });
+});
+
+test("fee deducted: the giver pays the gift, the person receives less the fee", () => {
+  assert.deepEqual(giftBreakdown(1_000_000, 50_000_000, "deducted"), { chargeKobo: 1_000_000, netKobo: 950_000, feeKobo: 50_000, mode: "deducted", finishes: false });
+  const big = giftBreakdown(20_000_000, 50_000_000, "deducted");
+  assert.equal(big.feeKobo, 500_000);
+  assert.equal(big.netKobo, 19_500_000);
+});
+
+test("a gift larger than what is left finishes the need exactly", () => {
+  for (const mode of ["on_top", "deducted"] as const) {
+    const b = giftBreakdown(5_000_000, 3_000_000, mode);
+    assert.equal(b.netKobo, 3_000_000);
+    assert.equal(b.feeKobo, 150_000);
+    assert.equal(b.chargeKobo, 3_150_000);
+    assert.equal(b.finishes, true);
+  }
+});
+
+test("charge always equals credited amount plus fee", () => {
+  for (const g of [100_000, 123_400, 999_900, 10_000_000, 77_777_700]) {
+    for (const mode of ["on_top", "deducted"] as const) {
+      const b = giftBreakdown(g, 60_000_000, mode);
+      assert.equal(b.chargeKobo, b.netKobo + b.feeKobo);
+      assert.ok(b.feeKobo <= 500_000);
+    }
+  }
 });
 
 test("progress and remaining", () => {

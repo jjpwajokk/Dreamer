@@ -187,4 +187,83 @@ do $$ begin
        = (select sum(raised_kobo) from public.needs), 'ledger mismatch: contributions vs raised';
 end $$;
 
+-- 10. Fees: the charge must cover amount + fee; only amount counts toward the need
+set role service_role;
+insert into public.contributions (need_id, giver_email, amount_kobo, fee_kobo, fee_mode, paystack_reference)
+  select id, 'fee@example.com', 950000, 50000, 'deducted', 'ref-fee' from public.needs where status = 'live' order by published_at limit 1;
+do $$
+declare r jsonb; before bigint; nid uuid;
+begin
+  select need_id into nid from public.contributions where paystack_reference = 'ref-fee';
+  select raised_kobo into before from public.needs where id = nid;
+  r := public.record_paystack_charge('ref-fee', 999999);
+  assert r->>'result' = 'amount_mismatch', 'underpaid fee not caught';
+  update public.contributions set status = 'pending' where paystack_reference = 'ref-fee';
+  r := public.record_paystack_charge('ref-fee', 1000000);
+  assert r->>'result' = 'ok', 'fee gift not recorded';
+  assert (select raised_kobo from public.needs where id = nid) = before + 950000, 'fee counted toward the need';
+end $$;
+
+-- 11. New sectors are accepted, with their caps
+do $$ begin
+  begin
+    insert into public.needs (slug, category, title, display_name, state, amount_kobo)
+      values ('cap-test', 'emergency', 'Too big', 'Ada', 'Lagos', 30000000);
+    raise exception 'FAIL: emergency cap not enforced';
+  exception when check_violation then null;
+  end;
+  insert into public.institutions (name, type) values ('Mama Put Supplies', 'supplier');
+end $$;
+
+-- 12. Expired need: redirect needs consent, then moves the gift; refunds are recorded
+insert into public.contributions (need_id, giver_email, amount_kobo, paystack_reference)
+  select id, 'exp@example.com', 300000, 'ref-exp' from public.needs where status = 'expired' limit 1;
+insert into public.contributions (need_id, giver_email, amount_kobo, paystack_reference)
+  select id, 'exp2@example.com', 200000, 'ref-exp2' from public.needs where status = 'expired' limit 1;
+select public.record_paystack_charge('ref-exp', 300000), public.record_paystack_charge('ref-exp2', 200000);
+do $$
+declare r jsonb; c uuid;
+begin
+  select id into c from public.contributions where paystack_reference = 'ref-exp2';
+  r := public.record_refund(c);
+  assert r->>'result' = 'ok', 'refund not recorded';
+  assert (select status from public.contributions where id = c) = 'refunded', 'refund status';
+  r := public.record_refund(c);
+  assert r->>'result' = 'not_refundable', 'double refund allowed';
+end $$;
+do $$
+declare r jsonb; c uuid; target uuid; target_before bigint;
+begin
+  select c2.id into c from public.contributions c2 join public.needs n on n.id = c2.need_id
+    where n.status = 'expired' and c2.status = 'success' and c2.paystack_reference = 'ref-exp';
+  if c is null then
+    raise notice 'no expired gift in seed; skipping redirect test';
+    return;
+  end if;
+  select id, raised_kobo into target, target_before from public.needs
+    where status = 'live' and amount_kobo - raised_kobo >= (select amount_kobo from public.contributions where id = c)
+    order by published_at limit 1;
+  r := public.redirect_contribution(c, target);
+  assert r->>'result' = 'no_consent', 'redirect without consent';
+  update public.contributions set expiry_choice = 'redirect' where id = c;
+  r := public.redirect_contribution(c, target);
+  assert r->>'result' = 'ok', 'redirect failed: ' || r::text;
+  assert (select status from public.contributions where id = c) = 'redirected', 'original not marked';
+  assert (select raised_kobo from public.needs where id = target) = target_before + (select amount_kobo from public.contributions where id = c), 'target not credited';
+end $$;
+
+-- 13. Rate limit
+do $$ begin
+  assert public.hit_rate_limit('t', 2, 60), 'first hit blocked';
+  assert public.hit_rate_limit('t', 2, 60), 'second hit blocked';
+  assert not public.hit_rate_limit('t', 2, 60), 'third hit allowed';
+end $$;
+reset role;
+
+-- 14. Ledger again, counting only gifts that are still held
+do $$ begin
+  assert (select sum(amount_kobo) from public.contributions where status = 'success')
+       = (select sum(raised_kobo) from public.needs), 'ledger mismatch after fees/redirects';
+end $$;
+
 \echo 'ALL DATABASE TESTS PASSED'

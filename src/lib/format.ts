@@ -1,3 +1,6 @@
+import { CATEGORIES, SECTORS, type Category } from "./sectors";
+export type { Category };
+
 export const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", "Cross River", "Delta",
   "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi",
@@ -5,14 +8,10 @@ export const NIGERIAN_STATES = [
   "Taraba", "Yobe", "Zamfara",
 ] as const;
 
-export type Category = "education" | "healthcare";
 export type NeedStatus =
   | "draft" | "submitted" | "needs_info" | "live" | "funded" | "paid_out" | "completed" | "rejected" | "expired";
 
-export const CATEGORY_LABEL: Record<Category, string> = {
-  education: "Education",
-  healthcare: "Healthcare",
-};
+export const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c, SECTORS[c].label])) as Record<Category, string>;
 
 export const STATUS_LABEL: Record<NeedStatus, string> = {
   draft: "Draft",
@@ -43,6 +42,10 @@ export const MILESTONES: { value: string; label: string; category?: Category }[]
   { value: "treated", label: "Treatment done", category: "healthcare" },
   { value: "discharged", label: "Discharged", category: "healthcare" },
   { value: "recovering", label: "Recovering", category: "healthcare" },
+  { value: "moved_in", label: "Rent paid, home secured", category: "housing" },
+  { value: "business_running", label: "Business is running", category: "livelihood" },
+  { value: "certified", label: "Trained and certified", category: "skills" },
+  { value: "back_on_feet", label: "Back on their feet", category: "emergency" },
   { value: "back_to_work", label: "Back to work" },
   { value: "progress", label: "Progress" },
   { value: "thank_you", label: "Thank you" },

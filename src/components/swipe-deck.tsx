@@ -10,7 +10,7 @@ import { CATEGORY_LABEL, daysLeft } from "@/lib/format";
 import { formatNaira, progressPercent } from "@/lib/money";
 import { NeedAvatar, VerifiedBadge } from "@/components/need-bits";
 import { Progress, buttonClass } from "@/components/ui";
-import { recordSwipe, toggleSave } from "@/app/discover/actions";
+import { recordSwipe, toggleSave } from "@/app/(app)/discover/actions";
 
 type Direction = "left" | "right" | "up";
 

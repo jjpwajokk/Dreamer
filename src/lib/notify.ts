@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { formatNaira } from "@/lib/money";
 import { siteUrl } from "@/lib/config";
+import { consentToken } from "@/lib/consent";
+import { sendSms } from "@/lib/sms";
 
 async function needSummary(needId: string) {
   const admin = createAdminClient();
@@ -26,7 +28,7 @@ export async function notifyGiftReceived(reference: string, funded: boolean) {
   const admin = createAdminClient();
   const { data: c } = await admin
     .from("contributions")
-    .select("need_id, giver_email, giver_name, amount_kobo, tip_kobo, paid_at")
+    .select("need_id, giver_email, giver_name, amount_kobo, fee_kobo, tip_kobo, paid_at")
     .eq("paystack_reference", reference)
     .maybeSingle();
   if (!c) return;
@@ -39,7 +41,8 @@ export async function notifyGiftReceived(reference: string, funded: boolean) {
     text: [
       `Hi${c.giver_name ? ` ${c.giver_name}` : ""},`,
       ``,
-      `Your gift of ${formatNaira(c.amount_kobo)} to ${need.display_name} has been received.${c.tip_kobo ? ` Thank you also for the ${formatNaira(c.tip_kobo)} tip to Dreamer.` : ""}`,
+      `Your gift of ${formatNaira(c.amount_kobo)} to ${need.display_name} has been received.`,
+      c.fee_kobo ? `Platform fee: ${formatNaira(c.fee_kobo)} (5%, capped at ₦5,000). It pays for verification, payment processing and payouts.` : ``,
       `Reference: ${reference}`,
       ``,
       `The money will be paid directly to ${need.institution_label ?? "the institution"}, never to a personal account. We'll email you when it's paid, and when ${need.display_name} posts an update.`,
@@ -67,7 +70,7 @@ export async function notifyPaidOut(needId: string) {
   if (!need) return;
   await sendEmail({
     to: await giverEmails(needId),
-    subject: `Paid: ${need.display_name}'s fees reached ${need.institution_label ?? "the institution"}`,
+    subject: `Paid: your gift for ${need.display_name} reached ${need.institution_label ?? "the institution"}`,
     text: `Good news. The money you gave has been paid directly to ${need.institution_label ?? "the institution"} for ${need.display_name}. We've asked ${need.display_name} to share an update when they can.\n\n${siteUrl()}/n/${need.slug}`,
   });
 }
@@ -80,4 +83,58 @@ export async function notifyUpdatePosted(needId: string) {
     subject: `${need.display_name} posted an update`,
     text: `${need.display_name}, whom you helped, has shared what changed.\n\nRead it here: ${siteUrl()}/n/${need.slug}`,
   });
+}
+
+/**
+ * A need expired before it was fully funded. Ask every giver what they want:
+ * a refund, or to move the gift to someone with a similar need.
+ */
+export async function notifyNeedExpired(needId: string, displayName: string) {
+  const admin = createAdminClient();
+  const { data: gifts } = await admin
+    .from("contributions")
+    .select("id, giver_email, giver_name, amount_kobo")
+    .eq("need_id", needId)
+    .eq("status", "success")
+    .is("expiry_choice", null);
+  for (const g of gifts ?? []) {
+    const link = `${siteUrl()}/consent/${consentToken(g.id as string)}`;
+    await sendEmail({
+      to: g.giver_email as string,
+      subject: `${displayName}'s need closed before it was fully funded`,
+      text: [
+        `Hi${g.giver_name ? ` ${g.giver_name}` : ""},`,
+        ``,
+        `${displayName}'s need reached its 30-day limit before the full amount was raised, so we won't pay out a partial amount without your say.`,
+        `Your gift of ${formatNaira(g.amount_kobo as number)} is safe. Please choose what happens to it:`,
+        ``,
+        `• Refund it to you, or`,
+        `• Move it to another verified person with a similar need.`,
+        ``,
+        `Choose here (no sign-in needed): ${link}`,
+        ``,
+        `If we don't hear from you within 14 days, we'll refund you.`,
+      ].join("\n"),
+    });
+  }
+}
+
+/** Reminds the person helped to post an update, 2 weeks and 3 months after payout. */
+export async function remindForUpdate(needId: string, which: "2w" | "3m") {
+  const admin = createAdminClient();
+  const { data: need } = await admin.from("needs").select("id, display_name, created_by, contact_phone").eq("id", needId).maybeSingle();
+  if (!need) return;
+  let email: string | null = null;
+  if (need.created_by) {
+    const { data: p } = await admin.from("profiles").select("email").eq("user_id", need.created_by).maybeSingle();
+    email = (p?.email as string) ?? null;
+  }
+  const link = `${siteUrl()}/me/needs`;
+  const when = which === "2w" ? "two weeks" : "three months";
+  const text =
+    which === "2w"
+      ? `It's been ${when} since we paid ${need.display_name}'s bill. Your givers would love to know how it's going. A short note and a photo is perfect.`
+      : `It's been ${when} since ${need.display_name}'s need was met. A quick update on what has changed means a lot to the people who gave.`;
+  if (email) await sendEmail({ to: email, subject: `A quick update for ${need.display_name}'s givers?`, text: `${text}\n\nPost it here: ${link}` });
+  await sendSms(need.contact_phone as string | null, `Dreamer: ${text} Post at ${link}`);
 }

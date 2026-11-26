@@ -8,10 +8,6 @@ export function siteUrl(): string {
   return (fromEnv || "http://localhost:3000").replace(/\/$/, "");
 }
 
-export function healthcareEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_HEALTHCARE_ENABLED === "true";
-}
-
 export function adminEmails(): string[] {
   return (process.env.ADMIN_EMAILS || "")
     .split(",")

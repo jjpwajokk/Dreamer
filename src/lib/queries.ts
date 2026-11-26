@@ -1,4 +1,5 @@
 import "server-only";
+import { isCategory } from "@/lib/sectors";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -11,7 +12,7 @@ export async function getFeed(filters: FeedFilters, viewer: { userId?: string | 
   if (!supabaseConfigured()) return [];
   const supabase = await createClient();
   let query = supabase.from("public_needs").select("*").eq("status", "live").limit(60);
-  if (filters.category === "education" || filters.category === "healthcare") query = query.eq("category", filters.category);
+  if (isCategory(filters.category)) query = query.eq("category", filters.category);
   if (filters.state) query = query.eq("state", filters.state);
   const { data, error } = await query.order("published_at", { ascending: false });
   if (error) {
@@ -77,11 +78,30 @@ export async function getPublicNeed(slug: string) {
 }
 
 export async function getSiteStats() {
-  if (!supabaseConfigured()) return { live: 0, funded: 0 };
+  const empty = { live: 0, funded: 0, raisedKobo: 0, givers: 0, sectors: 0 };
+  if (!supabaseConfigured()) return empty;
   const supabase = await createClient();
-  const [{ count: live }, { count: funded }] = await Promise.all([
-    supabase.from("public_needs").select("id", { count: "exact", head: true }).eq("status", "live"),
-    supabase.from("public_needs").select("id", { count: "exact", head: true }).in("status", ["funded", "paid_out", "completed"]),
-  ]);
-  return { live: live ?? 0, funded: funded ?? 0 };
+  const { data } = await supabase.from("public_needs").select("status, raised_kobo, giver_count, category");
+  if (!data) return empty;
+  return {
+    live: data.filter((n) => n.status === "live").length,
+    funded: data.filter((n) => ["funded", "paid_out", "completed"].includes(n.status)).length,
+    raisedKobo: data.reduce((s, n) => s + Number(n.raised_kobo), 0),
+    givers: data.reduce((s, n) => s + Number(n.giver_count), 0),
+    sectors: new Set(data.map((n) => n.category)).size,
+  };
+}
+
+export async function getRecentUpdates(limit = 3) {
+  if (!supabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data: updates } = await supabase.from("public_updates").select("*").order("published_at", { ascending: false }).limit(limit);
+  if (!updates?.length) return [];
+  const { data: needs } = await supabase
+    .from("public_needs")
+    .select("id, slug, display_name, category, state, cover_photo_path")
+    .in("id", updates.map((u) => u.need_id));
+  return updates
+    .map((u) => ({ update: u as PublicUpdate, need: needs?.find((n) => n.id === u.need_id) }))
+    .filter((r) => r.need) as { update: PublicUpdate; need: Pick<PublicNeed, "id" | "slug" | "display_name" | "category" | "state" | "cover_photo_path"> }[];
 }

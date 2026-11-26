@@ -1,76 +1,74 @@
 import Link from "next/link";
-import { Compass, HeartHandshake, PlusCircle, Shield, UserRound } from "lucide-react";
-import { Logo } from "@/components/logo";
-import { buttonClass } from "@/components/ui";
+import { ArrowRight } from "lucide-react";
+import { Wordmark } from "@/components/logo";
 
-type NavProps = { signedIn: boolean; isAdmin: boolean };
-
-export function SiteHeader({ signedIn, isAdmin }: NavProps) {
+export function SiteHeader({ signedIn }: { signedIn: boolean }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-line/70 bg-bg/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2" aria-label="Dreamer home">
-          <Logo className="h-8 w-8" />
-          <span className="font-display text-xl font-semibold tracking-tight">Dreamer</span>
+    <header className="sticky top-0 z-40 border-b border-white/[.06] bg-night/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" aria-label="Dreamer home">
+          <Wordmark tone="light" />
         </Link>
-        <nav className="hidden items-center gap-1 text-sm font-medium sm:flex">
-          <Link className="rounded-full px-3 py-2 hover:bg-black/5" href="/discover">Discover</Link>
-          <Link className="rounded-full px-3 py-2 hover:bg-black/5" href="/me/needs/new">Post a need</Link>
-          <Link className="rounded-full px-3 py-2 hover:bg-black/5" href="/about">How it works</Link>
-          {signedIn ? <Link className="rounded-full px-3 py-2 hover:bg-black/5" href="/me">My giving</Link> : null}
-          {isAdmin ? <Link className="rounded-full px-3 py-2 text-brand hover:bg-brand-soft" href="/admin">Admin</Link> : null}
-          {signedIn ? (
-            <Link className="rounded-full px-3 py-2 hover:bg-black/5" href="/me/account">Account</Link>
-          ) : (
-            <Link className={buttonClass("primary", "sm", "ml-2")} href="/login">Sign in</Link>
-          )}
+        <nav className="hidden items-center gap-1 text-sm font-medium text-white/70 md:flex" aria-label="Main">
+          <Link className="rounded-lg px-3 py-2 hover:text-white" href="/discover">Discover</Link>
+          <Link className="rounded-lg px-3 py-2 hover:text-white" href="/#how">How it works</Link>
+          <Link className="rounded-lg px-3 py-2 hover:text-white" href="/#sectors">Sectors</Link>
+          <Link className="rounded-lg px-3 py-2 hover:text-white" href="/#trust">Trust</Link>
+          <Link className="rounded-lg px-3 py-2 hover:text-white" href="/about">About</Link>
         </nav>
-        <div className="sm:hidden">
-          {isAdmin ? (
-            <Link href="/admin" className={buttonClass("secondary", "sm")}>
-              <Shield className="h-4 w-4" aria-hidden /> Admin
+        <div className="flex items-center gap-2">
+          {signedIn ? (
+            <Link href="/me" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-semibold text-night hover:bg-white/90">
+              Open app <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
-          ) : !signedIn ? (
-            <Link href="/login" className={buttonClass("primary", "sm")}>Sign in</Link>
-          ) : null}
+          ) : (
+            <>
+              <Link href="/login" className="hidden h-9 items-center rounded-lg px-3 text-sm font-semibold text-white/80 hover:text-white sm:inline-flex">
+                Sign in
+              </Link>
+              <Link href="/discover" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-semibold text-night hover:bg-white/90">
+                Start giving <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
   );
 }
 
-export function BottomNav({ signedIn }: NavProps) {
-  const items = [
-    { href: "/discover", label: "Discover", Icon: Compass },
-    { href: "/me/needs/new", label: "Post a need", Icon: PlusCircle },
-    { href: "/me", label: "My giving", Icon: HeartHandshake },
-    { href: signedIn ? "/me/account" : "/login", label: signedIn ? "Account" : "Sign in", Icon: UserRound },
-  ];
-  return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur sm:hidden" aria-label="Main">
-      <ul className="mx-auto grid max-w-md grid-cols-4">
-        {items.map(({ href, label, Icon }) => (
-          <li key={href}>
-            <Link href={href} className="flex flex-col items-center gap-0.5 pt-2 text-[11px] font-medium text-muted hover:text-ink">
-              <Icon className="h-5 w-5" aria-hidden />
-              {label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
 export function SiteFooter() {
+  const cols = [
+    { title: "Give", links: [["Discover needs", "/discover"], ["How giving works", "/#how"], ["Fees", "/#fees"]] },
+    { title: "Get help", links: [["Post a need", "/me/needs/new"], ["What we verify", "/#trust"], ["Sectors", "/#sectors"]] },
+    { title: "Dreamer", links: [["About", "/about"], ["Privacy", "/privacy"], ["Terms", "/terms"]] },
+  ] as const;
   return (
-    <footer className="mx-auto mt-16 max-w-5xl px-4 pb-28 text-sm text-muted sm:pb-10">
-      <div className="flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <p>Dreamer. Giving is about empathy, and there is no empathy without connection.</p>
-        <div className="flex gap-4">
-          <Link href="/about" className="hover:text-ink">How it works</Link>
-          <Link href="/privacy" className="hover:text-ink">Privacy</Link>
-          <Link href="/terms" className="hover:text-ink">Terms</Link>
+    <footer className="bg-night text-white/60">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div>
+          <Wordmark tone="light" />
+          <p className="mt-4 max-w-xs text-sm leading-relaxed">
+            Giving is about empathy, and there is no empathy without connection. Verified needs, paid straight to the institution, with the update that shows what changed.
+          </p>
+        </div>
+        {cols.map((c) => (
+          <div key={c.title}>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40">{c.title}</p>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {c.links.map(([label, href]) => (
+                <li key={href}>
+                  <Link href={href} className="hover:text-white">{label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-white/[.06]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p>© {new Date().getFullYear()} Dreamer. Made in Nigeria, for Africa.</p>
+          <p>Payments by Paystack · Built on bank-grade security</p>
         </div>
       </div>
     </footer>

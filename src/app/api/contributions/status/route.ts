@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const { data } = await admin
     .from("contributions")
-    .select("status, amount_kobo, tip_kobo, giver_id, need:needs(slug, display_name, status)")
+    .select("status, amount_kobo, fee_kobo, fee_mode, giver_id, need:needs(slug, display_name, status)")
     .eq("paystack_reference", reference)
     .maybeSingle();
   if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
     {
       status: data.status,
       amount_kobo: data.amount_kobo,
-      tip_kobo: data.tip_kobo,
+      fee_kobo: data.fee_kobo,
+      fee_mode: data.fee_mode,
       guest: !data.giver_id,
       need: need ? { slug: need.slug, display_name: need.display_name, status: need.status } : null,
     },

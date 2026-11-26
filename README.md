@@ -15,7 +15,7 @@ Test site: https://dreamer-woad-kappa.vercel.app (payments not switched on yet).
 | 1 | Need posting: 6-step form, drafts, private document upload, consent, submit for review | `/me/needs/new`, `/me/needs` |
 | 2 | Admin verification: checklist, approve, ask for more info or reject, Verified badge with note | `/admin/needs` |
 | 3 | Swipe discovery: drag or buttons, filters (category, state, close to goal), save, full story page with WhatsApp preview image | `/discover`, `/n/[slug]` |
-| 4 | Giving with Paystack: quick amounts, "Finish it", optional tip, guest giving, receipts. Counted **only** by the signed webhook | `/n/[slug]/give`, `/api/paystack/webhook` |
+| 4 | Giving with Paystack: quick amounts, "Finish it", 5% platform fee (capped at ₦5,000, added on top or taken from the gift), guest giving, receipts. Counted **only** by the signed webhook | `/n/[slug]/give`, `/api/paystack/webhook` |
 | 5 | Payout to the institution: Paystack Transfer (with bank account check), or record a manual bank transfer | `/admin/payouts` |
 | 6 | Transformation updates: text, milestone, up to 4 photos, admin approval, givers emailed | `/me/needs/[id]/update`, `/admin/updates` |
 | 7 | Giver impact page and shareable impact card | `/me`, `/impact/[id]` |
@@ -59,7 +59,9 @@ You need three free accounts: **Supabase**, **Paystack** (test mode is fine) and
 | `PAYSTACK_SECRET_KEY` | `sk_test_…` |
 | `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | `pk_test_…` |
 | `ADMIN_EMAILS` | Your email (and Jane's), comma-separated. These become admins when they sign in. |
-| `CRON_SECRET` | Any long random string (protects the daily expiry job) |
+| `CRON_SECRET` | Any long random string (protects the daily job: expiry, giver choice emails, update reminders) |
+| `TERMII_API_KEY` | Optional. Sends SMS update reminders through Termii |
+| `CONSENT_SECRET` | Optional. Signs refund/redirect choice links (falls back to the service role key) |
 | `NEXT_PUBLIC_SITE_URL` | Your Vercel address, e.g. `https://dreamer-xyz.vercel.app` (add after the first deploy, then redeploy) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Optional. Without them, emails (receipts, updates) are written to the Vercel logs instead of sent. |
 
@@ -93,7 +95,7 @@ Paystack can't reach `localhost`, so to test gifts locally use a tunnel (e.g. `n
 ## Tests
 
 ```bash
-npm test               # money rules (amounts, gift caps, tips)
+npm test               # money rules (amounts, gift caps, platform fee)
 npm run typecheck
 ./scripts/test-db.sh   # applies migrations + seed to a throwaway local Postgres and checks the
                        # security rules and money functions (needs psql and a local Postgres)
@@ -104,7 +106,7 @@ The full flow (swipe → give → webhook → post a need → verify → payout 
 ## How the money works
 
 1. Giving creates a `pending` contribution and sends the giver to Paystack Checkout.
-2. Paystack calls `/api/paystack/webhook` (`charge.success`). The signature is checked, then the database function `record_paystack_charge` marks the gift successful and adds it to the need, in one transaction, at most once per reference. **This is the only place a gift is counted.** The tip is recorded but never counted toward the need.
+2. Paystack calls `/api/paystack/webhook` (`charge.success`). The signature is checked, then the database function `record_paystack_charge` marks the gift successful and adds it to the need, in one transaction, at most once per reference. **This is the only place a gift is counted.** The platform fee is recorded in `fee_kobo` and never counted toward the need.
 3. When the total reaches the goal, the need becomes `funded` and stops taking gifts. Admins get a "payout due" email.
 4. The admin checks the school's account with the bank (Paystack account resolve) and sends a Paystack Transfer, or records a manual transfer. `transfer.success` marks the need `paid_out`.
 5. When the person's first update is approved, the need is `completed`.
@@ -116,7 +118,6 @@ The full flow (swipe → give → webhook → post a need → verify → payout 
 - Remove the seed data: run [`supabase/remove-seed.sql`](supabase/remove-seed.sql) in the SQL editor.
 - Custom SMTP for sign-in emails, and `RESEND_API_KEY` for receipts.
 - Only then switch to Paystack **live** keys (`sk_live_…`). The "Test mode" banner disappears automatically.
-- To open Healthcare, set `NEXT_PUBLIC_HEALTHCARE_ENABLED=true`.
 
 ## Project layout
 

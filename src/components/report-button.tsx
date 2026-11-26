@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Flag } from "lucide-react";
-import { reportNeed, type ReportState } from "@/app/n/[slug]/actions";
+import { reportNeed, type ReportState } from "@/app/(app)/n/[slug]/actions";
 import { Button, Field, Input, Notice, Textarea } from "@/components/ui";
 
 export function ReportButton({ needId }: { needId: string }) {

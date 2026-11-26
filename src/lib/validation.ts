@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { NIGERIAN_STATES } from "./format";
-import { MIN_NEED_KOBO, NEED_CAP_KOBO } from "./money";
+import { MIN_NEED_KOBO } from "./money";
+import { CATEGORIES, PAYEE_TYPES, SECTORS } from "./sectors";
+import { MILESTONES } from "./format";
 
 export const needBasicsSchema = z
   .object({
     relationship: z.enum(["self", "parent", "guardian", "teacher", "religious_leader", "other"]),
-    category: z.enum(["education", "healthcare"]),
+    category: z.enum(CATEGORIES),
     display_name: z.string().trim().min(1, "Enter a first name").max(40),
     is_minor: z.boolean(),
     state: z.enum(NIGERIAN_STATES, { message: "Choose a state" }),
@@ -18,11 +20,12 @@ export const needBasicsSchema = z
     amount_kobo: z.number().int().min(MIN_NEED_KOBO, "The smallest need is ₦1,000"),
   })
   .superRefine((v, ctx) => {
-    if (v.amount_kobo > NEED_CAP_KOBO[v.category]) {
+    const cap = SECTORS[v.category].capKobo;
+    if (v.amount_kobo > cap) {
       ctx.addIssue({
         code: "custom",
         path: ["amount_kobo"],
-        message: `For now, ${v.category} needs are capped at ₦${(NEED_CAP_KOBO[v.category] / 100).toLocaleString("en-NG")}`,
+        message: `${SECTORS[v.category].label} needs are capped at ₦${(cap / 100).toLocaleString("en-NG")} for now`,
       });
     }
   });
@@ -33,8 +36,8 @@ export const needStorySchema = z.object({
 });
 
 export const institutionSchema = z.object({
-  name: z.string().trim().min(2, "Enter the school or hospital name").max(160),
-  type: z.enum(["school", "hospital"]),
+  name: z.string().trim().min(2, "Enter the name of who will be paid").max(160),
+  type: z.enum(PAYEE_TYPES),
   state: z.enum(NIGERIAN_STATES, { message: "Choose a state" }),
   address: z.string().trim().max(200).optional().or(z.literal("")),
   contact_name: z.string().trim().min(2, "Who can we call there? (e.g. the bursar)").max(80),
@@ -48,7 +51,7 @@ export const institutionSchema = z.object({
 export const giftSchema = z.object({
   needId: z.string().uuid(),
   amountKobo: z.number().int().positive(),
-  tipPercent: z.number().int().min(0).max(20),
+  feeMode: z.enum(["on_top", "deducted"]),
   email: z.string().trim().email("Enter a valid email for your receipt"),
   name: z.string().trim().max(60).optional().or(z.literal("")),
   anonymous: z.boolean(),
@@ -56,7 +59,7 @@ export const giftSchema = z.object({
 
 export const updateSchema = z.object({
   body: z.string().trim().min(10, "Write at least a sentence").max(1000),
-  milestone: z.enum(["enrolled", "back_in_class", "results", "graduated", "treated", "discharged", "recovering", "back_to_work", "progress", "thank_you"]),
+  milestone: z.enum(MILESTONES.map((m) => m.value) as [string, ...string[]]),
 });
 
 export const reportSchema = z.object({

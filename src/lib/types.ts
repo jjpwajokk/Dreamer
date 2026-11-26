@@ -1,3 +1,4 @@
+import type { PayeeType } from "./sectors";
 import type { Category, NeedStatus } from "./format";
 
 export type PublicNeed = {
@@ -23,7 +24,7 @@ export type PublicNeed = {
   paid_out_at: string | null;
   completed_at: string | null;
   expires_at: string | null;
-  institution_type: "school" | "hospital" | null;
+  institution_type: PayeeType | null;
   institution_label: string | null;
   giver_count: number;
   payout_completed_at: string | null;
@@ -69,7 +70,7 @@ export type Need = {
 export type Institution = {
   id: string;
   name: string;
-  type: "school" | "hospital";
+  type: PayeeType;
   state: string | null;
   address: string | null;
   contact_name: string | null;

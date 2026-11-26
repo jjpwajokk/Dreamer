@@ -97,3 +97,11 @@ export async function initiateTransfer(input: { amountKobo: number; recipientCod
     }),
   });
 }
+
+/** Full refund of a charge back to the giver's card or account. */
+export async function refundTransaction(reference: string) {
+  return call<{ status: string }>("/refund", {
+    method: "POST",
+    body: JSON.stringify({ transaction: reference }),
+  });
+}
