@@ -58,10 +58,10 @@ export default async function Home() {
                 Share your dream
               </Link>
             </div>
-            <ul className="mt-10 grid max-w-lg grid-cols-1 gap-3 text-sm text-white/65 sm:grid-cols-3">
-              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-mint" aria-hidden /> Verified needs</li>
-              <li className="flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-mint" aria-hidden /> Held in escrow</li>
-              <li className="flex items-center gap-2"><Landmark className="h-4 w-4 text-mint" aria-hidden /> Paid directly to the payee</li>
+            <ul className="mt-10 flex flex-col gap-3 text-sm text-white/65 sm:flex-row sm:flex-wrap sm:gap-x-7 sm:gap-y-2">
+              <li className="flex items-center gap-2 whitespace-nowrap"><ShieldCheck className="h-4 w-4 text-mint" aria-hidden /> Verified needs</li>
+              <li className="flex items-center gap-2 whitespace-nowrap"><LockKeyhole className="h-4 w-4 text-mint" aria-hidden /> Held in escrow</li>
+              <li className="flex items-center gap-2 whitespace-nowrap"><Landmark className="h-4 w-4 text-mint" aria-hidden /> Paid directly to the payee</li>
             </ul>
           </div>
 
