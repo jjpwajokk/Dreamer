@@ -23,6 +23,7 @@ import {
   Menu,
   PlusCircle,
   ReceiptText,
+  FlaskConical,
   ScrollText,
   Settings,
   Sparkles,
@@ -94,6 +95,7 @@ function groups(user: NavUser): Group[] {
         { href: "/admin/expired", label: "Expired needs", Icon: Timer },
         { href: "/admin/reports", label: "Reports", Icon: Flag },
         { href: "/admin/ledger", label: "Ledger", Icon: ReceiptText },
+        { href: "/admin/samples", label: "Sample data", Icon: FlaskConical },
         { href: "/admin/audit", label: "Audit log", Icon: ScrollText },
       ],
     });

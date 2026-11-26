@@ -126,7 +126,7 @@ The full flow (swipe → give → webhook → post a need → verify → payout 
 ## Before real launch (live money)
 
 - Legal sign-off on the money flow, terms and privacy policy (drafts are at `/terms` and `/privacy`), CAC registration and Paystack business verification. See the checklist in [docs/PRODUCT.md](docs/PRODUCT.md).
-- Remove the seed data: run [`supabase/remove-seed.sql`](supabase/remove-seed.sql) in the SQL editor.
+- Remove the seed data: run [`supabase/remove-seed.sql`](supabase/remove-seed.sql) in the SQL editor, and press **Remove sample data** in Admin > Sample data.
 - Custom SMTP for sign-in emails, and `RESEND_API_KEY` for receipts.
 - Only then switch to Paystack **live** keys (`sk_live_…`). The "Test mode" banner disappears automatically.
 
