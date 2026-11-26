@@ -50,8 +50,9 @@ export default async function OrgPage({ params }: Props) {
         <div className="grid-lines absolute inset-0" aria-hidden />
         <div className="relative">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-mint">{orgTypeLabel(org.org_type)}</p>
-          <h1 className="mt-2 flex flex-wrap items-center gap-2 font-display text-[32px] leading-tight sm:text-[42px]">
-            {org.name} <BadgeCheck className="h-7 w-7 text-mint" aria-label="Verified organisation" />
+          <h1 className="mt-2 font-display text-[32px] leading-tight sm:text-[42px]">
+            {org.name}
+            <BadgeCheck className="ml-2 inline-block h-7 w-7 -translate-y-0.5 align-middle text-mint" aria-label="Verified organisation" />
           </h1>
           {org.tagline ? <p className="mt-2 max-w-2xl text-white/75">{org.tagline}</p> : null}
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">

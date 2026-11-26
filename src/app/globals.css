@@ -137,3 +137,8 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Grid children may shrink below their content width, so long names truncate instead of pushing the page wider than the screen. */
+.grid > * {
+  min-width: 0;
+}

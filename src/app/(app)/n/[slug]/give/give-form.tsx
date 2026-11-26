@@ -72,7 +72,7 @@ export function GiveForm({
               {formatNaira(k)}
             </button>
           ))}
-          <button type="button" className={cn(pickClass(finishActive), "col-span-2 sm:col-span-1")} onClick={() => setAmountText(String(remainingKobo / 100))}>
+          <button type="button" className={cn(pickClass(finishActive), picks.length % 2 === 0 && "col-span-2 sm:col-span-1")} onClick={() => setAmountText(String(remainingKobo / 100))}>
             Finish it
           </button>
         </div>

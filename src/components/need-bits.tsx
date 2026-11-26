@@ -18,26 +18,16 @@ export function NeedAvatar({
   className?: string;
 }) {
   const url = publicMediaUrl(photoPath);
-  if (url) {
-    return (
-      <Image
-        src={url}
-        alt=""
-        width={size}
-        height={size}
-        className={cn("rounded-full object-cover", className)}
-        style={{ width: size, height: size }}
-      />
-    );
-  }
   const tone = avatarTone(name);
+  // Initials sit underneath the photo, so the circle is never blank while the photo loads.
   return (
     <div
       aria-hidden
-      className={cn("flex shrink-0 items-center justify-center rounded-full font-display font-semibold text-white", className)}
+      className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display font-semibold text-white", className)}
       style={{ width: size, height: size, fontSize: size * 0.4, background: `linear-gradient(135deg, ${tone.from}, ${tone.to})` }}
     >
       {initials(name)}
+      {url ? <Image src={url} alt="" width={size} height={size} sizes={`${size}px`} className="absolute inset-0 h-full w-full object-cover" /> : null}
     </div>
   );
 }

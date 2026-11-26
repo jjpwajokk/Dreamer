@@ -49,6 +49,33 @@ export default async function NeedPage({ params }: Props) {
   const url = `${siteUrl()}/n/${need.slug}`;
   const place = need.institution_label ?? sector(need.category).payeePhrase;
 
+  const fundingCard = (
+    <Card className="p-5">
+      <div className="tabular flex items-baseline justify-between">
+        <p className="text-3xl font-semibold tracking-[-0.03em]">{formatNaira(need.raised_kobo)}</p>
+        <p className="text-sm text-muted">of {formatNaira(need.amount_kobo)}</p>
+      </div>
+      <Progress percent={pct} className="mt-3" />
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+        <span className="flex items-center gap-1"><Users className="h-4 w-4" aria-hidden /> {need.giver_count} giver{need.giver_count === 1 ? "" : "s"}</span>
+        {need.status === "live" && left !== null ? (
+          <span className="flex items-center gap-1"><CalendarClock className="h-4 w-4" aria-hidden /> {left} day{left === 1 ? "" : "s"} left</span>
+        ) : null}
+      </div>
+      {need.status === "live" ? (
+        <LinkButton href={`/n/${need.slug}/give`} size="lg" className="mt-5 w-full">
+          Give to {need.display_name}
+        </LinkButton>
+      ) : null}
+      <p className="mt-3 flex items-start gap-2 text-xs text-muted">
+        <Landmark className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        {need.payout_to === "personal"
+          ? `Paid to ${place}, after our checks.`
+          : `Paid straight to ${place}, after our checks.`}
+      </p>
+    </Card>
+  );
+
   return (
     <div>
       <Link href="/discover" className="mb-5 inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
@@ -78,6 +105,7 @@ export default async function NeedPage({ params }: Props) {
               {socials ? <div className="mt-3"><SocialLinks view={socials} target={{ needId: need.id }} name={need.display_name} /></div> : null}
             </div>
           </div>
+          <div className="mt-6 lg:hidden">{fundingCard}</div>
 
           <blockquote className="mt-6 rounded-2xl border border-sun/25 bg-sun-soft px-5 py-4">
             <p className="font-display text-2xl leading-snug">&ldquo;{need.my_words}&rdquo;</p>
@@ -138,33 +166,12 @@ export default async function NeedPage({ params }: Props) {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-8">
+          <div className="hidden lg:block">{fundingCard}</div>
           <Card className="p-5">
-            <div className="tabular flex items-baseline justify-between">
-              <p className="text-3xl font-semibold tracking-[-0.03em]">{formatNaira(need.raised_kobo)}</p>
-              <p className="text-sm text-muted">of {formatNaira(need.amount_kobo)}</p>
-            </div>
-            <Progress percent={pct} className="mt-3" />
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-              <span className="flex items-center gap-1"><Users className="h-4 w-4" aria-hidden /> {need.giver_count} giver{need.giver_count === 1 ? "" : "s"}</span>
-              {need.status === "live" && left !== null ? (
-                <span className="flex items-center gap-1"><CalendarClock className="h-4 w-4" aria-hidden /> {left} day{left === 1 ? "" : "s"} left</span>
-              ) : null}
-            </div>
-            {need.status === "live" ? (
-              <LinkButton href={`/n/${need.slug}/give`} size="lg" className="mt-5 w-full">
-                Give to {need.display_name}
-              </LinkButton>
-            ) : null}
-            <p className="mt-3 flex items-start gap-2 text-xs text-muted">
-              <Landmark className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              {need.payout_to === "personal"
-                ? `Paid to ${place}, after our checks.`
-                : `Paid straight to ${place}, after our checks.`}
-            </p>
-          </Card>
-          <Card className="space-y-3 p-5">
             <ShareButton url={url} text={`${need.display_name}: “${need.my_words}” A verified need on Dreamer.`} label={`Share ${need.display_name}'s story`} />
-            <ReportButton needId={need.id} />
+            <div className="mt-4 border-t border-line pt-3">
+              <ReportButton needId={need.id} />
+            </div>
           </Card>
         </aside>
       </div>

@@ -8,7 +8,7 @@ import { Bookmark, BookOpen, Heart, MapPin, X } from "lucide-react";
 import type { PublicNeed } from "@/lib/types";
 import { CATEGORY_LABEL, daysLeft } from "@/lib/format";
 import { formatNaira, progressPercent } from "@/lib/money";
-import { NeedAvatar, VerifiedBadge } from "@/components/need-bits";
+import { EscrowBadge, NeedAvatar, UrgencyBadge, VerifiedBadge } from "@/components/need-bits";
 import { Progress, buttonClass } from "@/components/ui";
 import { recordSwipe, toggleSave } from "@/app/(app)/discover/actions";
 
@@ -187,17 +187,19 @@ function CardFace({ need, under = false }: { need: PublicNeed; under?: boolean }
       aria-hidden={under}
     >
       <div className="relative flex flex-1 flex-col justify-between bg-gradient-to-b from-sun-soft via-sun-soft/50 to-surface p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <NeedAvatar name={need.display_name} photoPath={need.cover_photo_path} size={64} />
-            <div>
-              <h2 className="font-display text-2xl font-semibold leading-tight">{need.display_name}</h2>
-              <p className="flex items-center gap-1 text-sm text-muted">
-                <MapPin className="h-3.5 w-3.5" aria-hidden /> {need.city ? `${need.city}, ` : ""}{need.state}
-              </p>
+        <div className="flex items-start gap-3">
+          <NeedAvatar name={need.display_name} photoPath={need.cover_photo_path} size={64} />
+          <div className="min-w-0 flex-1">
+            <h2 className={`line-clamp-2 font-display font-semibold leading-tight ${need.display_name.length > 14 ? "text-xl" : "text-2xl"}`}>{need.display_name}</h2>
+            <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted">
+              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden /> {need.city ? `${need.city}, ` : ""}{need.state}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <VerifiedBadge verifiedAt={need.verified_at} compact />
+              <EscrowBadge verifiedAt={need.verified_at} status={need.status} />
+              <UrgencyBadge isUrgent={need.is_urgent} deadline={need.deadline} />
             </div>
           </div>
-          <VerifiedBadge verifiedAt={need.verified_at} compact />
         </div>
 
         <blockquote className="my-4">

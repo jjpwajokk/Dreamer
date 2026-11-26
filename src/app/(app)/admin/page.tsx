@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertCircle, ArrowRight, Banknote, BadgeCheck, Coins, Flag, HandCoins, Megaphone, Timer, Users } from "lucide-react";
+import { AlarmClock, AlertCircle, ArrowRight, Banknote, BadgeCheck, Building2, Coins, Fingerprint, Flag, HandCoins, Hourglass, Images, Megaphone, Timer, Users } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatNaira } from "@/lib/money";
 import { PageTitle, SectionTitle, Stat } from "@/components/ui";
@@ -40,12 +40,12 @@ export default async function AdminHome() {
   const expiredCount = expired.count ?? 0;
 
   const queues = [
-    { label: "Time-sensitive, not yet verified", value: urgentQ.count ?? 0, href: "/admin/needs?status=submitted", Icon: AlertCircle },
+    { label: "Time-sensitive, not yet verified", value: urgentQ.count ?? 0, href: "/admin/needs?status=submitted", Icon: AlarmClock },
     { label: "New needs to verify", value: submitted, href: "/admin/needs?status=submitted", Icon: BadgeCheck },
-    { label: "Live in escrow, to verify", value: escrowQ.count ?? 0, href: "/admin/needs?status=escrow", Icon: Timer },
-    { label: "ID checks to review", value: kycQ.count ?? 0, href: "/admin/people", Icon: BadgeCheck },
-    { label: "Organisations to review", value: orgQ.count ?? 0, href: "/admin/organisations", Icon: BadgeCheck },
-    { label: "Photos to review", value: photoQ.count ?? 0, href: "/admin/photos", Icon: Megaphone },
+    { label: "Live in escrow, to verify", value: escrowQ.count ?? 0, href: "/admin/needs?status=escrow", Icon: Hourglass },
+    { label: "ID checks to review", value: kycQ.count ?? 0, href: "/admin/people", Icon: Fingerprint },
+    { label: "Organisations to review", value: orgQ.count ?? 0, href: "/admin/organisations", Icon: Building2 },
+    { label: "Photos to review", value: photoQ.count ?? 0, href: "/admin/photos", Icon: Images },
     { label: "Payouts due", value: funded, href: "/admin/payouts", Icon: Banknote },
     { label: "Updates to review", value: pendingUpdates, href: "/admin/updates", Icon: Megaphone },
     { label: "Open reports", value: openReports, href: "/admin/reports", Icon: Flag },
