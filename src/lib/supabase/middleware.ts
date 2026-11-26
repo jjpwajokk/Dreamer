@@ -18,8 +18,9 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Refreshes the auth token if needed. Do not remove.
-  await supabase.auth.getUser();
+  // Refreshes the auth token if needed. Do not remove. Guests (no auth cookie) skip the network call.
+  const hasAuth = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  if (hasAuth) await supabase.auth.getUser();
 
   // Anonymous id so guests don't see the same cards again.
   if (!request.cookies.get("dreamer_anon")) {
